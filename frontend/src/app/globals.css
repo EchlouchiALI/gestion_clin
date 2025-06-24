@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f9fafb;        /* blanc doux */
+  --foreground: #111827;        /* gris foncé élégant */
+  --accent: #2563eb;            /* bleu moderne */
+  --card: #ffffff;
+  --input-bg: #f3f4f6;
+  --border: #e5e7eb;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f0f0f;
+    --foreground: #f9f9f9;
+    --card: #1a1a1a;
+    --input-bg: #1f1f1f;
+    --border: #333;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Inputs & buttons */
+input, select, textarea {
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+button {
+  background-color: var(--accent);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #1d4ed8;
+}
+
