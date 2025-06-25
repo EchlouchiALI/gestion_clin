@@ -12,17 +12,22 @@ import {
   RefreshCw,
   TrendingUp,
   Activity,
-  FileText,
   ArrowRight,
-  Calendar,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CustomLineChart } from "@/components/charts/line-chart"
-import { CustomBarChart } from "@/components/charts/bar-chart"
-import { CustomPieChart } from "@/components/charts/pie-chart"
+
+// Fallback stats when no auth token is present (preview / demo mode)
+const DEMO_STATS: Stats = {
+  totalUsers: 1250,
+  totalPatients: 980,
+  totalMedecins: 27,
+  totalRdv: 3450,
+  rdvToday: 30,
+  rdvThisWeek: 210,
+}
 
 interface Stats {
   totalUsers: number
@@ -32,34 +37,6 @@ interface Stats {
   rdvToday?: number
   rdvThisWeek?: number
 }
-
-// Mock data for charts
-const monthlyData = [
-  { month: "Jan", patients: 45, medecins: 12, rdv: 180, revenus: 15000 },
-  { month: "Fév", patients: 52, medecins: 13, rdv: 210, revenus: 17500 },
-  { month: "Mar", patients: 48, medecins: 14, rdv: 195, revenus: 16200 },
-  { month: "Avr", patients: 61, medecins: 15, rdv: 245, revenus: 20300 },
-  { month: "Mai", patients: 55, medecins: 16, rdv: 220, revenus: 18800 },
-  { month: "Jun", patients: 67, medecins: 17, rdv: 268, revenus: 22400 },
-]
-
-const specialiteData = [
-  { name: "Cardiologie", value: 35, patients: 120 },
-  { name: "Dermatologie", value: 25, patients: 85 },
-  { name: "Pédiatrie", value: 20, patients: 68 },
-  { name: "Neurologie", value: 15, patients: 51 },
-  { name: "Autres", value: 5, patients: 17 },
-]
-
-const weeklyRdvData = [
-  { day: "Lun", rdv: 45, taux: 85 },
-  { day: "Mar", rdv: 52, taux: 92 },
-  { day: "Mer", rdv: 48, taux: 88 },
-  { day: "Jeu", rdv: 61, taux: 95 },
-  { day: "Ven", rdv: 55, taux: 90 },
-  { day: "Sam", rdv: 32, taux: 70 },
-  { day: "Dim", rdv: 18, taux: 45 },
-]
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -74,8 +51,13 @@ export default function AdminDashboard() {
       else setLoading(true)
 
       const token = localStorage.getItem("token")
+
+      // ➜  Aucune authentification en mode preview : on charge les données factices
       if (!token) {
-        throw new Error("Token d'authentification manquant")
+        console.warn("Aucun token d'authentification trouvé. Passage en mode démo avec des statistiques factices.")
+        setStats(DEMO_STATS)
+        setError("")
+        return
       }
 
       const res = await axios.get("http://localhost:3001/admin/stats", {
@@ -100,7 +82,25 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats()
   }, [])
-
+  const [systemStatus, setSystemStatus] = useState<{
+    server: string
+    db: string
+    lastBackup: string
+  } | null>(null)
+  
+  const fetchSystemStatus = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      const res = await axios.get("http://localhost:3001/admin/status", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setSystemStatus(res.data)
+    } catch (err) {
+      console.error("Erreur lors de la récupération du statut système", err)
+    }
+  }
+  
   const handleLogout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -284,10 +284,7 @@ export default function AdminDashboard() {
           ) : null}
         </div>
 
-        {/* Quick Actions */}
-        
-
-        {/* Additional Stats */}
+        {/* Basic Information Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
@@ -347,149 +344,6 @@ export default function AdminDashboard() {
             </Card>
           </div>
         )}
-
-        {/* Advanced Statistics */}
-        <div className="mt-8 space-y-6">
-          {/* Revenue and Growth Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5" />
-                  <span>Évolution mensuelle des patients</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomLineChart data={monthlyData} dataKey="patients" xAxisKey="month" color="#06B6D4" />
-                <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-cyan-400 font-semibold">+23%</div>
-                    <div className="text-slate-400">vs mois dernier</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-green-400 font-semibold">67</div>
-                    <div className="text-slate-400">Ce mois</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-purple-400 font-semibold">341</div>
-                    <div className="text-slate-400">Total 6 mois</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Activity className="w-5 h-5" />
-                  <span>Revenus mensuels (€)</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomBarChart data={monthlyData} dataKey="revenus" xAxisKey="month" color="#8B5CF6" />
-                <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-green-400 font-semibold">+18%</div>
-                    <div className="text-slate-400">Croissance</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-purple-400 font-semibold">22,400€</div>
-                    <div className="text-slate-400">Ce mois</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-yellow-400 font-semibold">110,200€</div>
-                    <div className="text-slate-400">Total 6 mois</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Specialties and Weekly Performance */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Stethoscope className="w-5 h-5" />
-                  <span>Répartition par spécialité</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomPieChart data={specialiteData} dataKey="patients" nameKey="name" />
-                <div className="mt-4 space-y-2">
-                  {specialiteData.map((item, index) => (
-                    <div key={item.name} className="flex justify-between items-center text-sm">
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: ["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444"][index] }}
-                        ></div>
-                        <span>{item.name}</span>
-                      </div>
-                      <span className="font-semibold">{item.patients} patients</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CalendarDays className="w-5 h-5" />
-                  <span>Performance hebdomadaire</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomBarChart data={weeklyRdvData} dataKey="rdv" xAxisKey="day" color="#10B981" />
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-sm text-slate-400">Taux d'occupation moyen</div>
-                    <div className="text-2xl font-bold text-green-400">82%</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-slate-400">Meilleur jour</div>
-                    <div className="text-lg font-semibold text-white">Jeudi (95%)</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Key Performance Indicators */}
-          <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="w-5 h-5" />
-                <span>Indicateurs de performance clés</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-blue-400">4.8/5</div>
-                  <div className="text-sm text-slate-400">Satisfaction patients</div>
-                  <div className="text-xs text-green-400">+0.3 vs mois dernier</div>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-green-400">12min</div>
-                  <div className="text-sm text-slate-400">Temps d'attente moyen</div>
-                  <div className="text-xs text-green-400">-2min vs mois dernier</div>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-purple-400">94%</div>
-                  <div className="text-sm text-slate-400">Taux de présence</div>
-                  <div className="text-xs text-green-400">+2% vs mois dernier</div>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-yellow-400">€187</div>
-                  <div className="text-sm text-slate-400">Revenus par patient</div>
-                  <div className="text-xs text-green-400">+€15 vs mois dernier</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   )

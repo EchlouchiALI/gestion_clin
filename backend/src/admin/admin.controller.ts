@@ -72,4 +72,5 @@ export class AdminController {
   sendMessageToPatient(@Body() body: { email: string; content: string }) {
     return this.mailService.sendMailToPatient(body.email, body.content) // ✅ ici aussi
   }
+  
 }
