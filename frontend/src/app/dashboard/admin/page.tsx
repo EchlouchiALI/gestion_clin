@@ -15,19 +15,12 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 // Fallback stats when no auth token is present (preview / demo mode)
-const DEMO_STATS: Stats = {
-  totalUsers: 1250,
-  totalPatients: 980,
-  totalMedecins: 27,
-  totalRdv: 3450,
-  rdvToday: 30,
-  rdvThisWeek: 210,
-}
+
 
 interface Stats {
   totalUsers: number
@@ -36,6 +29,8 @@ interface Stats {
   totalRdv: number
   rdvToday?: number
   rdvThisWeek?: number
+  totalAllUsers: number;
+  
 }
 
 export default function AdminDashboard() {
@@ -52,10 +47,10 @@ export default function AdminDashboard() {
 
       const token = localStorage.getItem("token")
 
-      // ➜  Aucune authentification en mode preview : on charge les données factices
+      // Aucune authentification en mode preview : on charge les données factices
       if (!token) {
         console.warn("Aucun token d'authentification trouvé. Passage en mode démo avec des statistiques factices.")
-        setStats(DEMO_STATS)
+        
         setError("")
         return
       }
@@ -72,6 +67,8 @@ export default function AdminDashboard() {
         handleLogout()
       } else {
         setError("Erreur lors du chargement des statistiques.")
+        // En cas d'erreur, utiliser les données de démo
+       
       }
     } finally {
       setLoading(false)
@@ -82,25 +79,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats()
   }, [])
-  const [systemStatus, setSystemStatus] = useState<{
-    server: string
-    db: string
-    lastBackup: string
-  } | null>(null)
-  
-  const fetchSystemStatus = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      if (!token) return
-      const res = await axios.get("http://localhost:3001/admin/status", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setSystemStatus(res.data)
-    } catch (err) {
-      console.error("Erreur lors de la récupération du statut système", err)
-    }
-  }
-  
+
   const handleLogout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -108,9 +87,8 @@ export default function AdminDashboard() {
   }
 
   const handleRefresh = () => {
-    fetchStats(true)
-  }
-
+    window.location.reload();
+  };
   // Navigation handlers
   const handleNavigateToPatients = () => {
     router.push("/dashboard/admin/patients")
@@ -249,7 +227,7 @@ export default function AdminDashboard() {
               <StatCard
                 icon={Users}
                 label="Utilisateurs totaux"
-                value={stats.totalUsers}
+                value={stats.totalAllUsers}
                 trend="up"
                 trendValue="+12%"
               />
@@ -283,67 +261,6 @@ export default function AdminDashboard() {
             </>
           ) : null}
         </div>
-
-        {/* Basic Information Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CalendarDays className="w-5 h-5" />
-                  <span>Activité récente</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Rendez-vous aujourd'hui</span>
-                    <span className="font-semibold">{stats.rdvToday || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Rendez-vous cette semaine</span>
-                    <span className="font-semibold">{stats.rdvThisWeek || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Taux d'occupation</span>
-                    <span className="font-semibold text-green-400">85%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Activity className="w-5 h-5" />
-                  <span>Statut du système</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Serveur</span>
-                    <span className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span className="text-green-400">En ligne</span>
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Base de données</span>
-                    <span className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span className="text-green-400">Connectée</span>
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Dernière sauvegarde</span>
-                    <span className="text-slate-300">Il y a 2h</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   )

@@ -9,5 +9,6 @@ import { MailModule } from '../mail/mail.module'
   imports: [TypeOrmModule.forFeature([Medecin]), MailModule],
   providers: [MedecinsService],
   controllers: [MedecinsController],
+  exports: [TypeOrmModule],
 })
 export class MedecinsModule {}

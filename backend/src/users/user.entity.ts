@@ -28,9 +28,11 @@ export class User {
   @Column({ default: 'patient' })
   role: 'patient' | 'medecin' | 'admin';
 
-  // Code temporaire pour la réinitialisation du mot de passe
   @Column({ type: 'varchar', nullable: true })
   resetCode: string | null;
+
+  @Column({ default: true })
+  isActive: boolean;
 
   // Relations
   @OneToMany(() => RendezVous, (rdv) => rdv.patient)
@@ -38,7 +40,4 @@ export class User {
 
   @OneToMany(() => Dossier, (dossier) => dossier.patient)
   dossiers: Dossier[];
-
-  @Column({ default: true })
-  isActive: boolean;
 }

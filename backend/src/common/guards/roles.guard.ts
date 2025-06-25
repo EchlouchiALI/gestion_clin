@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { jwtDecode } from 'jwt-decode'; // ✅ import corrigé
+import { jwtDecode } from 'jwt-decode';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -23,13 +23,22 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
 
-    if (!authHeader) throw new UnauthorizedException('Token manquant');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Token manquant ou mal formé');
+    }
 
     const token = authHeader.split(' ')[1];
-    const decoded: any = jwtDecode(token); // ✅ appel correct
 
-    if (!decoded || !decoded.role) throw new UnauthorizedException('Token invalide');
+    try {
+      const decoded: any = jwtDecode(token);
 
-    return requiredRoles.includes(decoded.role);
+      if (!decoded || !decoded.role) {
+        throw new UnauthorizedException('Token invalide ou sans rôle');
+      }
+
+      return requiredRoles.includes(decoded.role);
+    } catch (err) {
+      throw new UnauthorizedException('Token invalide ou corrompu');
+    }
   }
 }

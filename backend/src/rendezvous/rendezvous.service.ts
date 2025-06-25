@@ -12,14 +12,18 @@ export class RendezvousService {
   constructor(
     @InjectRepository(RendezVous)
     private readonly rendezvousRepo: Repository<RendezVous>,
+
     @InjectRepository(Medecin)
     private readonly medecinRepo: Repository<Medecin>,
+
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
     private readonly pdfService: PdfService,
     private readonly mailService: MailService,
   ) {}
 
+  // ✅ Pour l'admin : liste complète avec relations
   async findAllForAdmin() {
     return this.rendezvousRepo.find({
       relations: ['patient', 'medecin'],
@@ -27,6 +31,16 @@ export class RendezvousService {
     });
   }
 
+  // ✅ Pour un patient : liste filtrée par son ID
+  async findByPatient(patientId: number) {
+    return this.rendezvousRepo.find({
+      where: { patient: { id: patientId } },
+      relations: ['medecin'],
+      order: { date: 'ASC' },
+    });
+  }
+
+  // ✅ Création d’un RDV par un admin
   async createByAdmin(data: {
     patientId: number;
     medecinId: number;
@@ -50,7 +64,7 @@ export class RendezvousService {
 
     const saved = await this.rendezvousRepo.save(newRdv);
 
-    // ✅ Générer le PDF
+    // ✅ Générer PDF
     const pdfBuffer = await this.pdfService.generateRendezVousPDF({
       id: saved.id,
       nom: patient.nom,
@@ -62,7 +76,7 @@ export class RendezvousService {
       medecin: `Dr. ${medecin.prenom} ${medecin.nom}`,
     });
 
-    // ✅ Envoyer le mail au patient
+    // ✅ Envoyer email avec PDF
     await this.mailService.sendMailWithAttachment({
       to: patient.email,
       subject: 'Confirmation de rendez-vous – Polyclinique Atlas',
@@ -84,6 +98,7 @@ export class RendezvousService {
     return saved;
   }
 
+  // ✅ Suppression
   async delete(id: number) {
     const rdv = await this.rendezvousRepo.findOne({ where: { id } });
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
@@ -91,12 +106,14 @@ export class RendezvousService {
     return { message: 'Rendez-vous supprimé' };
   }
 
+  // ✅ Génération manuelle du PDF à partir de l'ID
   async generatePdfFor(id: number): Promise<Buffer> {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
       relations: ['patient', 'medecin'],
     });
-    if (!rdv) throw new NotFoundException('RDV non trouvé');
+
+    if (!rdv) throw new NotFoundException('Rendez-vous non trouvé');
 
     return this.pdfService.generateRendezVousPDF({
       id: rdv.id,
@@ -109,6 +126,8 @@ export class RendezvousService {
       medecin: `Dr. ${rdv.medecin.prenom} ${rdv.medecin.nom}`,
     });
   }
+
+  // ✅ Mise à jour d’un rendez-vous
   async update(id: number, data: {
     patientId?: number;
     medecinId?: number;
@@ -121,27 +140,27 @@ export class RendezvousService {
       where: { id },
       relations: ['patient', 'medecin'],
     });
-  
+
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
-  
-    // Mise à jour conditionnelle des champs
+
     if (data.patientId) {
       const patient = await this.userRepo.findOne({ where: { id: data.patientId } });
       if (!patient) throw new NotFoundException('Patient introuvable');
       rdv.patient = patient;
     }
-  
+
     if (data.medecinId) {
       const medecin = await this.medecinRepo.findOne({ where: { id: data.medecinId } });
       if (!medecin) throw new NotFoundException('Médecin introuvable');
       rdv.medecin = medecin;
     }
-  
+
     if (data.date) rdv.date = data.date;
     if (data.heure) rdv.heure = data.heure;
     if (data.motif) rdv.motif = data.motif;
     if (data.statut) rdv.statut = data.statut;
-  
+
     return await this.rendezvousRepo.save(rdv);
   }
+  
 }

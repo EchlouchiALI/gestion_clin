@@ -31,7 +31,7 @@ export default function LoginPage() {
       } else if (user.role === "medecin") {
         router.push("/medecin/dashboard")
       } else {
-        router.push("/patient/dashboard")
+        router.push("/dashboard/patient")
       }
     } catch (err) {
       setError("Identifiants incorrects. Veuillez réessayer.")

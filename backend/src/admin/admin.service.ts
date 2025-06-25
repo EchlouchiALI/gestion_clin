@@ -3,25 +3,32 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import { User } from 'src/users/user.entity';
 import { RendezVous } from 'src/rendezvous/rendezvous.entity';
+import { Medecin } from 'src/medecins/medecin.entity';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(RendezVous) private rdvRepo: Repository<RendezVous>,
+    @InjectRepository(Medecin) private medecinRepo: Repository<Medecin>,
   ) {}
 
   // 📊 Statistiques
   async getStats() {
-    const totalUsers = await this.userRepo.count();
+    const totalUsers = await this.userRepo.count(); // tous les users (admin + patient)
     const totalRdv = await this.rdvRepo.count();
     const totalPatients = await this.userRepo.count({ where: { role: 'patient' } });
-    const totalMedecins = await this.userRepo.count({ where: { role: 'medecin' } });
+    const totalAdmins = await this.userRepo.count({ where: { role: 'admin' } });
+
+    const totalMedecins = await this.medecinRepo.count(); // médecins dans table séparée
+    const totalAllUsers = totalPatients + totalMedecins + totalAdmins; // pour cohérence visuelle
 
     return {
-      totalUsers,
+      totalUsers,      // utilisateurs dans la table User
       totalPatients,
       totalMedecins,
+      totalAdmins,
+      totalAllUsers,   // total logique affichable (optionnel)
       totalRdv,
     };
   }
@@ -35,9 +42,7 @@ export class AdminService {
   // ❌ Supprimer un utilisateur
   async deleteUser(id: number) {
     const user = await this.userRepo.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('Utilisateur introuvable');
-    }
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
     return this.userRepo.remove(user);
   }
 
@@ -52,7 +57,7 @@ export class AdminService {
     });
   }
 
-  // 🛠 Modifier le rôle
+  // 🛠 Modifier le rôle d’un utilisateur
   async updateUserRole(id: number, role: 'admin' | 'medecin' | 'patient') {
     const user = await this.userRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Utilisateur non trouvé');
