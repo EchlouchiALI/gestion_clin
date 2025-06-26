@@ -13,6 +13,7 @@ import {
   import { Response } from 'express';
   import { RendezvousService } from './rendezvous.service';
   import { UpdateRendezvousDto } from './dto/update-rendezvous.dto';
+  import { Cron } from '@nestjs/schedule';
   
   @Controller('rendezvous')
   export class RendezvousController {
@@ -66,5 +67,9 @@ async updateRendezvous(
         throw new HttpException('Erreur génération PDF', HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
+    @Post('update-status')
+async forceUpdate() {
+  return this.rendezvousService.markPastAppointments();
+}
   }
   

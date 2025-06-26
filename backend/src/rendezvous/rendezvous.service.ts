@@ -6,6 +6,8 @@ import { Medecin } from '../medecins/medecin.entity';
 import { User } from '../users/user.entity';
 import { PdfService } from '../pdf/pdf.service';
 import { MailService } from '../mail/mail.service';
+import { Cron } from '@nestjs/schedule';
+import moment from 'moment';
 
 @Injectable()
 export class RendezvousService {
@@ -23,7 +25,6 @@ export class RendezvousService {
     private readonly mailService: MailService,
   ) {}
 
-  // ✅ Pour l'admin : liste complète avec relations
   async findAllForAdmin() {
     return this.rendezvousRepo.find({
       relations: ['patient', 'medecin'],
@@ -31,7 +32,6 @@ export class RendezvousService {
     });
   }
 
-  // ✅ Pour un patient : liste filtrée par son ID
   async findByPatient(patientId: number) {
     return this.rendezvousRepo.find({
       where: { patient: { id: patientId } },
@@ -40,7 +40,22 @@ export class RendezvousService {
     });
   }
 
-  // ✅ Création d’un RDV par un admin
+  async findByPatientId(patientId: number) {
+    return this.rendezvousRepo.find({
+      where: { patient: { id: patientId } },
+      relations: ['medecin'],
+      order: { date: 'DESC' },
+    });
+  }
+
+  async findByMedecinId(medecinId: number) {
+    return this.rendezvousRepo.find({
+      where: { medecin: { id: medecinId } },
+      relations: ['patient'],
+      order: { date: 'DESC' },
+    });
+  }
+
   async createByAdmin(data: {
     patientId: number;
     medecinId: number;
@@ -64,7 +79,6 @@ export class RendezvousService {
 
     const saved = await this.rendezvousRepo.save(newRdv);
 
-    // ✅ Générer PDF
     const pdfBuffer = await this.pdfService.generateRendezVousPDF({
       id: saved.id,
       nom: patient.nom,
@@ -76,7 +90,6 @@ export class RendezvousService {
       medecin: `Dr. ${medecin.prenom} ${medecin.nom}`,
     });
 
-    // ✅ Envoyer email avec PDF
     await this.mailService.sendMailWithAttachment({
       to: patient.email,
       subject: 'Confirmation de rendez-vous – Polyclinique Atlas',
@@ -98,7 +111,6 @@ export class RendezvousService {
     return saved;
   }
 
-  // ✅ Suppression
   async delete(id: number) {
     const rdv = await this.rendezvousRepo.findOne({ where: { id } });
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
@@ -106,7 +118,6 @@ export class RendezvousService {
     return { message: 'Rendez-vous supprimé' };
   }
 
-  // ✅ Génération manuelle du PDF à partir de l'ID
   async generatePdfFor(id: number): Promise<Buffer> {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
@@ -127,7 +138,6 @@ export class RendezvousService {
     });
   }
 
-  // ✅ Mise à jour d’un rendez-vous
   async update(id: number, data: {
     patientId?: number;
     medecinId?: number;
@@ -162,5 +172,29 @@ export class RendezvousService {
 
     return await this.rendezvousRepo.save(rdv);
   }
-  
+
+  async markPastAppointments() {
+    const now = moment();
+
+    const pastAppointments = await this.rendezvousRepo.find({
+      where: { statut: 'à venir' },
+    });
+
+    const toUpdate = pastAppointments.filter(rdv => {
+      const rdvDateTime = moment(`${rdv.date} ${rdv.heure}`, 'YYYY-MM-DD HH:mm');
+      return rdvDateTime.isBefore(now);
+    });
+
+    for (const rdv of toUpdate) {
+      rdv.statut = 'passé';
+      await this.rendezvousRepo.save(rdv);
+    }
+
+    return { updated: toUpdate.length };
+  }
+
+  @Cron('*/1 * * * *')
+  handleCronUpdate() {
+    this.markPastAppointments();
+  }
 }

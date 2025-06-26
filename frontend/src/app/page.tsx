@@ -41,9 +41,9 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-white text-gray-900 font-sans overflow-x-hidden">
+    <div className="bg-gray-950 text-gray-100 font-sans overflow-x-hidden">
       {/* HEADER */}
-      <header className="fixed top-0 w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/90 border-b border-gray-200/50">
+      <header className="fixed top-0 w-full z-50 transition-all duration-300 backdrop-blur-md bg-gray-950/90 border-b border-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
@@ -51,10 +51,10 @@ export default function Home() {
                 <Heart className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   Polyclinique Atlas
                 </h1>
-                <p className="text-xs text-gray-500">Excellence Médicale</p>
+                <p className="text-xs text-gray-400">Excellence Médicale</p>
               </div>
             </div>
 
@@ -64,24 +64,23 @@ export default function Home() {
                 <a
                   key={index}
                   href={`#${item.toLowerCase().replace("à propos", "about").replace("équipe", "team")}`}
-                  className="relative text-gray-700 hover:text-blue-600 transition-all duration-300 group"
+                  className="relative text-gray-300 hover:text-blue-400 transition-all duration-300 group"
                 >
                   {item}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 transition-all duration-300 group-hover:w-full"></span>
                 </a>
               ))}
             </nav>
 
             <div className="hidden md:flex items-center space-x-4">
-              <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white">
+              <Button variant="outline" className="border-blue-400 text-blue-400 hover:bg-blue-400/10 hover:text-blue-300">
                 Urgences 24/7
               </Button>
             </div>
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-            <Button variant="ghost" className="p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-
+              <Button variant="ghost" className="p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                 {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </div>
@@ -89,13 +88,13 @@ export default function Home() {
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <div className="md:hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/50">
+            <div className="md:hidden absolute top-full left-0 w-full bg-gray-950/95 backdrop-blur-md border-b border-gray-800/50">
               <div className="px-4 py-6 space-y-4">
                 {["Accueil", "À propos", "Services", "Équipe", "Contact"].map((item, index) => (
                   <a
                     key={index}
                     href={`#${item.toLowerCase().replace("à propos", "about").replace("équipe", "team")}`}
-                    className="block text-gray-700 hover:text-blue-600 transition-colors py-2"
+                    className="block text-gray-300 hover:text-blue-400 transition-colors py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item}
@@ -108,68 +107,61 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <section id="accueil" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background with parallax effect */}
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
-          style={{ transform: `translateY(${scrollY * 0.5}px)` }}
-        />
-
+      <section id="accueil" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
         {/* Animated background elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-400/5 to-purple-400/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-900/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-900/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-900/10 to-purple-900/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-full text-blue-800 text-sm font-medium mb-6">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-900/30 backdrop-blur-sm rounded-full text-blue-300 text-sm font-medium mb-6">
                 <Star className="h-4 w-4 mr-2" />
                 Clinique de référence à Fès
               </div>
 
               <h1 className="text-5xl lg:text-7xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Polyclinique
                 </span>
                 <br />
-                <span className="text-gray-900">Atlas</span>
+                <span className="text-white">Atlas</span>
               </h1>
 
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl">
+              <p className="text-xl text-gray-400 mb-8 leading-relaxed max-w-2xl">
                 Excellence médicale et innovation technologique au service de votre santé. Une équipe de spécialistes
                 dédiée à votre bien-être.
               </p>
 
               <div className="flex items-center text-gray-500 mb-8">
-                <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+                <MapPin className="h-5 w-5 mr-2 text-blue-400" />
                 <span>Route De Sefrou, Fès 30000</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link href="/login">
-      <Button className="text-lg px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-        Prendre rendez-vous
-        <ChevronRight className="ml-2 h-5 w-5" />
-      </Button>
-    </Link>
-                
+                <Link href="/login">
+                  <Button className="text-lg px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700">
+                    Prendre rendez-vous
+                    <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-8">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">15+</div>
+                  <div className="text-3xl font-bold text-blue-400 mb-1">15+</div>
                   <div className="text-sm text-gray-500">Années d'expérience</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">50+</div>
+                  <div className="text-3xl font-bold text-purple-400 mb-1">50+</div>
                   <div className="text-sm text-gray-500">Spécialistes</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-pink-600 mb-1">10k+</div>
+                  <div className="text-3xl font-bold text-pink-400 mb-1">10k+</div>
                   <div className="text-sm text-gray-500">Patients satisfaits</div>
                 </div>
               </div>
@@ -181,7 +173,7 @@ export default function Home() {
                   src="/img/1.png"
                   width={500}
                   height={600}
-                  className="w-full max-w-md mx-auto rounded-3xl shadow-2xl"
+                  className="w-full max-w-md mx-auto rounded-3xl shadow-2xl border-2 border-gray-800/50"
                   alt="Polyclinique Atlas - Établissement médical moderne"
                 />
               </div>
@@ -198,15 +190,15 @@ export default function Home() {
       </section>
 
       {/* VALEURS */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Nos Valeurs
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               Des principes fondamentaux qui guident chaque aspect de notre pratique médicale
             </p>
           </div>
@@ -237,7 +229,7 @@ export default function Home() {
             ].map((value, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 hover:scale-105"
+                className="group hover:shadow-2xl transition-all duration-500 border-gray-800 bg-gray-900 hover:bg-gray-800/50 hover:scale-105"
               >
                 <CardContent className="p-8 text-center">
                   <div
@@ -245,8 +237,8 @@ export default function Home() {
                   >
                     <value.icon className="h-10 w-10 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-gray-900">{value.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{value.description}</p>
+                  <h3 className="text-2xl font-bold mb-4 text-white">{value.title}</h3>
+                  <p className="text-gray-400 leading-relaxed">{value.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -305,8 +297,6 @@ export default function Home() {
                   <div className="text-sm text-gray-300">Satisfaction patient</div>
                 </div>
               </div>
-
-            
             </div>
 
             <div className="relative">
@@ -350,15 +340,15 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-      <section id="services" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-purple-50">
+      <section id="services" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Services Médicaux
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               Une gamme complète de spécialités médicales avec des équipements de pointe
             </p>
           </div>
@@ -404,7 +394,7 @@ export default function Home() {
             ].map((service, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 backdrop-blur-sm hover:scale-105 hover:-translate-y-2"
+                className="group hover:shadow-2xl transition-all duration-500 border-gray-800 bg-gray-800 hover:bg-gray-700/50 hover:scale-105 hover:-translate-y-2"
               >
                 <CardContent className="p-8">
                   <div
@@ -412,9 +402,8 @@ export default function Home() {
                   >
                     <span className="text-2xl">{service.icon}</span>
                   </div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-900">{service.title}</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6">{service.description}</p>
-                 
+                  <h3 className="text-xl font-bold mb-4 text-white">{service.title}</h3>
+                  <p className="text-gray-400 leading-relaxed mb-6">{service.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -423,15 +412,15 @@ export default function Home() {
       </section>
 
       {/* ÉQUIPE MÉDICALE */}
-      <section id="team" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="team" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Notre Équipe
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               Des professionnels de santé reconnus, dédiés à votre bien-être
             </p>
           </div>
@@ -465,19 +454,15 @@ export default function Home() {
             ].map((doctor, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50 hover:scale-105"
+                className="group hover:shadow-2xl transition-all duration-500 border-gray-800 bg-gray-900 hover:bg-gray-800/50 hover:scale-105"
               >
                 <CardContent className="p-8">
                   <div className="flex items-center gap-6">
-                    <div
-                      
-                    >
-                      
-                    </div>
+                    <div className={`w-16 h-16 bg-gradient-to-br ${doctor.gradient} rounded-full flex-shrink-0`}></div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{doctor.name}</h3>
-                      <p className="text-blue-600 font-semibold mb-2">{doctor.specialty}</p>
-                      <p className="text-gray-600 text-sm leading-relaxed">{doctor.description}</p>
+                      <h3 className="text-xl font-bold text-white mb-2">{doctor.name}</h3>
+                      <p className="text-blue-400 font-semibold mb-2">{doctor.specialty}</p>
+                      <p className="text-gray-400 text-sm leading-relaxed">{doctor.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -566,48 +551,58 @@ export default function Home() {
             <div>
               <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                 <CardContent className="p-8">
-                  <h3 className="text-2xl font-bold mb-6 text-white">Envoyez-nous un message</h3>
+                  <h3 className="text-2xl font-bold mb-6">Comment pouvons-nous vous aider ?</h3>
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Input
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        className="bg-white/20 border-white/30 text-white placeholder:text-gray-300 rounded-xl"
-                        placeholder="Nom complet"
-                        required
-                      />
-                      <Input
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="bg-white/20 border-white/30 text-white placeholder:text-gray-300 rounded-xl"
-                        placeholder="Email"
-                        required
-                      />
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <Input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Votre nom complet"
+                          className="bg-white/5 border-white/20 text-white placeholder-gray-400"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="Votre email"
+                          className="bg-white/5 border-white/20 text-white placeholder-gray-400"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="Votre téléphone"
+                          className="bg-white/5 border-white/20 text-white placeholder-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <Textarea
+                          name="message"
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          placeholder="Votre message"
+                          rows={5}
+                          className="bg-white/5 border-white/20 text-white placeholder-gray-400"
+                          required
+                        />
+                      </div>
                     </div>
-                    <Input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="bg-white/20 border-white/30 text-white placeholder:text-gray-300 rounded-xl"
-                      placeholder="Téléphone"
-                    />
-                    <Textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      className="bg-white/20 border-white/30 text-white placeholder:text-gray-300 min-h-[120px] rounded-xl"
-                      placeholder="Votre message"
-                      required
-                    />
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
                     >
                       Envoyer le message
-                      <ChevronRight className="ml-2 h-5 w-5" />
                     </Button>
                   </form>
                 </CardContent>
@@ -620,21 +615,66 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="bg-black text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <Heart className="h-6 w-6 text-white" />
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Heart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Polyclinique Atlas
+                  </h3>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Polyclinique Atlas
-                </h3>
-              </div>
+              <p className="text-gray-400 text-sm">
+                Excellence médicale et innovation technologique au service de votre santé.
+              </p>
             </div>
-            <p className="text-gray-400 mb-8">Excellence médicale • Innovation • Humanité</p>
-            <div className="border-t border-gray-800 pt-8">
-              <p className="text-gray-500">© {new Date().getFullYear()} Polyclinique Atlas. Tous droits réservés.</p>
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Liens rapides</h4>
+              <ul className="space-y-2 text-gray-400">
+                {["Accueil", "À propos", "Services", "Équipe", "Contact"].map((item, index) => (
+                  <li key={index}>
+                    <a
+                      href={`#${item.toLowerCase().replace("à propos", "about").replace("équipe", "team")}`}
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Contact</h4>
+              <ul className="space-y-3 text-gray-400">
+                <li className="flex items-start">
+                  <MapPin className="h-5 w-5 mr-2 mt-0.5 text-blue-400" />
+                  <span>Route De Sefrou, Fès 30000</span>
+                </li>
+                <li className="flex items-center">
+                  <Phone className="h-5 w-5 mr-2 text-blue-400" />
+                  <span>+212 535 00 00 00</span>
+                </li>
+                <li className="flex items-center">
+                  <Mail className="h-5 w-5 mr-2 text-blue-400" />
+                  <span>contact@polyclinique-atlas.ma</span>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Urgences</h4>
+              <Button className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 mb-4">
+                Appeler les urgences
+              </Button>
+              <p className="text-sm text-gray-500">Service disponible 24h/24 et 7j/7</p>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center">
+            <p className="text-gray-500">
+              © {new Date().getFullYear()} Polyclinique Atlas. Tous droits réservés.
+            </p>
           </div>
         </div>
       </footer>

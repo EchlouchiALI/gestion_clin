@@ -8,17 +8,21 @@ import {
   Body,
   UseGuards,
   NotFoundException,
+  Req,
 } from '@nestjs/common';
 import { MedecinsService } from './medecins.service';
 import { AuthGuard } from '@nestjs/passport';
 import { MailService } from '../mail/mail.service';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RendezvousService } from 'src/rendezvous/rendezvous.service';
 
 @Controller('admin/medecins')
-@UseGuards(AuthGuard('jwt')) // Protège toutes les routes avec JWT
+@UseGuards(AuthGuard('jwt'))
 export class MedecinsController {
   constructor(
     private readonly medecinsService: MedecinsService,
     private readonly mailService: MailService,
+    private readonly rendezvousService: RendezvousService,
   ) {}
 
   // 🧑‍⚕️ GET all medecins
@@ -71,5 +75,12 @@ export class MedecinsController {
     const updated = await this.medecinsService.update(+id, body);
     if (!updated) throw new NotFoundException('Médecin introuvable');
     return updated;
+  }
+
+  // 📅 GET tous mes rendez-vous (pour patient connecté)
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMyAppointments(@Req() req) {
+    return this.rendezvousService.findByPatientId(req.user.id);
   }
 }

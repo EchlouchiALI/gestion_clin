@@ -208,7 +208,7 @@ export default function AdminRendezVousPage() {
     total: rendezvousList.length,
     avenir: rendezvousList.filter((r) => r.statut === "à venir").length,
     passe: rendezvousList.filter((r) => r.statut === "passé").length,
-    annule: rendezvousList.filter((r) => r.statut === "annulé").length,
+    
   }
 
   const getStatutBadge = (statut: string) => {
@@ -217,8 +217,7 @@ export default function AdminRendezVousPage() {
         return "bg-green-500 text-white"
       case "passé":
         return "bg-gray-500 text-white"
-      case "annulé":
-        return "bg-red-500 text-white"
+      
       default:
         return "bg-gray-500 text-white"
     }
@@ -279,10 +278,7 @@ export default function AdminRendezVousPage() {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Annulés</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.annule}</p>
-            </div>
+            
             <Calendar className="w-8 h-8 text-red-500" />
           </div>
         </div>
@@ -364,13 +360,7 @@ export default function AdminRendezVousPage() {
               <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                 Ajouter
               </Button>
-              <Button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
-              >
-                Annuler
-              </Button>
+             
             </div>
           </form>
         </div>
@@ -452,13 +442,7 @@ export default function AdminRendezVousPage() {
               <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">
                 Modifier
               </Button>
-              <Button
-                type="button"
-                onClick={cancelEdit}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
-              >
-                Annuler
-              </Button>
+              
             </div>
           </form>
         </div>
@@ -486,7 +470,7 @@ export default function AdminRendezVousPage() {
               <option value="all">Tous</option>
               <option value="à venir">À venir</option>
               <option value="passé">Passé</option>
-              <option value="annulé">Annulé</option>
+                  
             </select>
           </div>
         </div>

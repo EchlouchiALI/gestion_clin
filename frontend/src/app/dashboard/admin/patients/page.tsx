@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
-import { Trash2, Mail, UserPlus, Search, User, Calendar } from "lucide-react"
+import { Trash2, Mail, UserPlus, Search, User, Calendar, Edit } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 
@@ -65,6 +65,16 @@ export default function PatientsPage() {
     lieuNaissance: "",
     email: "",
     password: "",
+  })
+
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    nom: "",
+    prenom: "",
+    age: "",
+    lieuNaissance: "",
+    email: "",
   })
 
   const filteredPatients = patients.filter(
@@ -146,6 +156,53 @@ export default function PatientsPage() {
     } catch {
       toast.error("Erreur lors de l'ajout du patient")
     }
+  }
+
+  const openEditModal = (patient: Patient) => {
+    setEditingPatient(patient)
+    setEditFormData({
+      nom: patient.nom,
+      prenom: patient.prenom,
+      age: patient.age.toString(),
+      lieuNaissance: patient.lieuNaissance,
+      email: patient.email,
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleEditPatient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPatient) return
+    
+    try {
+      const token = localStorage.getItem("token")
+      console.log("📦 ID du patient :", editingPatient?.id)
+console.log("📦 Données envoyées :", {
+  ...editFormData,
+  age: parseInt(editFormData.age)
+})
+await axios.patch(`http://localhost:3001/admin/patients/${editingPatient.id}`, {
+  ...editFormData,
+  age: parseInt(editFormData.age)
+}, {
+  headers: { Authorization: `Bearer ${token}` },
+})
+
+      toast.success("Patient modifié avec succès")
+      setEditModalOpen(false)
+      setEditingPatient(null)
+      setEditFormData({ nom: "", prenom: "", age: "", lieuNaissance: "", email: "" })
+      fetchPatients()
+    } catch (err: any) {
+      console.error("Erreur lors de la modification du patient :", {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        url: err.config?.url,
+      });
+      toast.error("Erreur lors de la modification du patient");
+    }
+    
   }
 
   useEffect(() => {
@@ -311,12 +368,18 @@ export default function PatientsPage() {
                       onClick={() => openMessageModal(patient.email)}
                       className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-xl py-2"
                     >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Envoyer un message
+                      <Mail className="w-4 h-4 mr-1" />
+                      Message
+                    </Button>
+                    <Button
+                      onClick={() => openEditModal(patient)}
+                      className="bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 rounded-xl px-3"
+                    >
+                      <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       onClick={() => deletePatient(patient.id)}
-                      className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl px-4"
+                      className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl px-3"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -414,6 +477,69 @@ export default function PatientsPage() {
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
                   Ajouter
+                </Button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {/* Modal de modification */}
+        {editModalOpen && editingPatient && (
+          <Modal title={`Modifier ${editingPatient.prenom} ${editingPatient.nom}`} onClose={() => setEditModalOpen(false)}>
+            <form onSubmit={handleEditPatient} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  placeholder="Nom"
+                  required
+                  value={editFormData.nom}
+                  onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
+                  className="border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+                <Input
+                  placeholder="Prénom"
+                  required
+                  value={editFormData.prenom}
+                  onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
+                  className="border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+                <Input
+                  type="number"
+                  placeholder="Âge"
+                  required
+                  value={editFormData.age}
+                  onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+                  className="border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+                <Input
+                  placeholder="Lieu de naissance"
+                  required
+                  value={editFormData.lieuNaissance}
+                  onChange={(e) => setEditFormData({ ...editFormData, lieuNaissance: e.target.value })}
+                  className="border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+              <Input
+                type="email"
+                placeholder="Email"
+                required
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                className="border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl py-3"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl py-3 hover:from-blue-600 hover:to-indigo-700"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Modifier
                 </Button>
               </div>
             </form>

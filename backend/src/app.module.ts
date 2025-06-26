@@ -15,6 +15,8 @@ import { DossiersModule } from './dossiers/dossiers.module'
 import { AdminModule } from './admin/admin.module'
 import { PatientModule } from './patient/patient.module'
 import { MailModule } from './mail/mail.module'
+import { ScheduleModule } from '@nestjs/schedule';
+import { OrdonnancesModule } from './ordonnances/ordonnances.module';
 
 // Garde de rôles
 import { RolesGuard } from './common/guards/roles.guard'
@@ -71,6 +73,8 @@ import { RolesGuard } from './common/guards/roles.guard'
     DossiersModule,
     RendezvousModule,
     MailModule,
+    OrdonnancesModule,
+    ScheduleModule.forRoot(),
   ],
 
   providers: [

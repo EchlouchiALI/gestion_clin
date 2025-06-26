@@ -2,12 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Medecin } from './medecin.entity';
+import { Patient } from '../patient/patient.entity';
+import { Ordonnance } from '../ordonnances/ordonnance.entity';
 
 @Injectable()
 export class MedecinsService {
   constructor(
     @InjectRepository(Medecin)
-    private medecinRepository: Repository<Medecin>,
+    private readonly medecinRepository: Repository<Medecin>,
+
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
+
+    @InjectRepository(Ordonnance)
+    private readonly ordonnanceRepository: Repository<Ordonnance>,
   ) {}
 
   // 📋 Liste de tous les médecins
@@ -49,5 +57,22 @@ export class MedecinsService {
 
     Object.assign(medecin, data);
     return this.medecinRepository.save(medecin);
+  }
+
+  // 👨‍⚕️ Liste des patients du médecin
+  async findPatientsByMedecin(medecinId: number) {
+    return this.patientRepository.find({
+      where: { medecin: { id: medecinId } },
+      order: { nom: 'ASC' },
+    });
+  }
+
+  // 📄 Liste des ordonnances du médecin
+  async findOrdonnancesByMedecin(medecinId: number) {
+    return this.ordonnanceRepository.find({
+      where: { medecin: { id: medecinId } },
+      relations: ['patient'],
+      order: { date: 'DESC' },
+    });
   }
 }

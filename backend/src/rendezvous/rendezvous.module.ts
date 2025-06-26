@@ -16,5 +16,7 @@ import { User } from '../users/user.entity';
   ],
   controllers: [RendezvousController],
   providers: [RendezvousService],
+  exports: [RendezvousService], // ✅ AJOUT OBLIGATOIRE
+
 })
 export class RendezvousModule {}

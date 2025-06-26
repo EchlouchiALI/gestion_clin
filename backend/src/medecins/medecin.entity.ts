@@ -1,27 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm'
-import { RendezVous } from '../rendezvous/rendezvous.entity'
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { RendezVous } from '../rendezvous/rendezvous.entity';
+import { Patient } from '../patient/patient.entity'; // ✅ corriger le chemin si le dossier est bien 'patient'
+import { Ordonnance } from '../ordonnances/ordonnance.entity';
 
 @Entity()
 export class Medecin {
   @PrimaryGeneratedColumn()
-  id: number
+  id: number;
 
   @Column()
-  nom: string
+  nom: string;
 
   @Column()
-  prenom: string
+  prenom: string;
 
   @Column({ unique: true })
-  email: string
+  email: string;
 
   @Column({ nullable: true })
-  specialite?: string
+  specialite?: string;
 
   @Column({ nullable: true })
-  telephone?: string
+  telephone?: string;
 
-  // Relation inverse vers RendezVous
+  // 🩺 Relation vers les rendez-vous
   @OneToMany(() => RendezVous, (rendezvous) => rendezvous.medecin)
-  rendezvous: RendezVous[]
+  rendezvous: RendezVous[];
+
+  // 🧑‍⚕️ Relation vers les patients suivis par ce médecin
+  @OneToMany(() => Patient, (patient) => patient.medecin)
+  patients: Patient[];
+
+  // 📝 Relation vers les ordonnances créées par ce médecin
+  @OneToMany(() => Ordonnance, (ordonnance) => ordonnance.medecin)
+  ordonnances: Ordonnance[];
 }
