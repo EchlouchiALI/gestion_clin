@@ -80,7 +80,5 @@ Créer une **plateforme moderne, sécurisée et responsive** permettant à une c
 - `pdfkit` / `html-pdf` (PDF)
 - `qrcode` (QR code)
 
----
 
-## 🏗️ Architecture générale
 
