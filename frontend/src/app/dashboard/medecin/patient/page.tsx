@@ -86,32 +86,31 @@ export default function PageGestionPatients() {
   }
 
   const updatePatient = async (data: CreatePatientData | UpdatePatientData) => {
-    if (!("id" in data)) {
-      throw new Error("Impossible de mettre à jour un patient sans ID.")
+    if (!('id' in data)) {
+      throw new Error("ID du patient manquant pour la mise à jour");
     }
   
     try {
-      setActionLoading(true)
+      setActionLoading(true);
+  
       const res = await fetch(`http://localhost:3001/medecin/patients/${data.id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
-      })
+      });
   
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)
+      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
   
-      const updated = await res.json()
-      setPatients((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-      setModalType(null)
-      setSelectedPatient(null)
-      alert("Patient modifié avec succès !")
+      const updated = await res.json();
+      setPatients((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setModalType(null);
+      alert("Patient modifié avec succès !");
     } catch (err: any) {
-      console.error("Erreur lors de la modification :", err)
-      alert(`Erreur : ${err.message}`)
+      alert(`Erreur lors de la modification: ${err.message}`);
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
   
 
   const deletePatient = async (patientId: number) => {
