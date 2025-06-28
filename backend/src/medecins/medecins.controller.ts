@@ -3,8 +3,8 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Put,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -28,27 +28,41 @@ export class MedecinsController {
     private readonly patientService: PatientService,
   ) {}
 
+  // 🔐 Profil médecin connecté
   @Get('me/profile')
   async getProfile(@Request() req) {
     return this.medecinsService.findOne(req.user.id);
   }
 
+  // 🔐 Rendez-vous du médecin
   @Get('me/rendezvous')
   async getRendezvous(@Request() req) {
     return this.rendezvousService.findByMedecinId(req.user.id);
   }
 
+  // ✅ Ajouter un patient
   @Post('patients')
   async createPatient(@Body() dto: CreatePatientDto, @Request() req) {
     return this.patientService.create(dto, req.user.id);
   }
 
-  // 🔒 Routes admin (optionnelles si admin != médecin)
+  // ✅ Modifier un patient
+  @Put('patients/:id')
+  async updatePatient(
+    @Param('id') id: number,
+    @Body() body: any, // idéalement un UpdatePatientDto
+    @Request() req,
+  ) {
+    return this.patientService.update(id, body);
+  }
+
+  // 🔐 ADMIN - Voir tous les médecins
   @Get('admin/medecins')
   findAll() {
     return this.medecinsService.findAll();
   }
 
+  // 🔐 ADMIN - Ajouter médecin
   @Post('admin/medecins')
   create(@Body() body: {
     nom: string;
@@ -60,13 +74,15 @@ export class MedecinsController {
     return this.medecinsService.create(body);
   }
 
+  // 🔐 ADMIN - Supprimer médecin
   @Delete('admin/medecins/:id')
   delete(@Param('id') id: number) {
     return this.medecinsService.delete(id);
   }
 
+  // 🔐 ADMIN - Modifier médecin
   @Put('admin/medecins/:id')
-  async update(
+  async updateMedecin(
     @Param('id') id: string,
     @Body() body: {
       nom?: string;
@@ -81,6 +97,7 @@ export class MedecinsController {
     return updated;
   }
 
+  // 🔐 ADMIN - Envoyer message au médecin
   @Post('admin/medecins/message')
   async sendMessageToMedecin(@Body() body: { email: string; content: string }) {
     await this.mailService.sendMailToPatient(body.email, body.content);
