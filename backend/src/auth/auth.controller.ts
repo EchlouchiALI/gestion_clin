@@ -1,41 +1,51 @@
-import { Controller, Post, Body } from '@nestjs/common'
-import { AuthService } from './auth.service'
-import { RegisterPatientDto } from './dto/register-patient.dto'
-import { LoginDto } from './dto/login.dto'
+import {
+  Controller,
+  Post,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { RegisterPatientDto } from './dto/register-patient.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // ✅ Route : POST /auth/register
+  // ✅ Enregistrement d’un patient
   @Post('register')
   async register(@Body() body: RegisterPatientDto) {
-    return this.authService.registerPatient(body)
+    return await this.authService.registerPatient(body);
   }
 
-  // ✅ Route : POST /auth/login
+  // ✅ Connexion (login)
   @Post('login')
   async login(@Body() body: LoginDto) {
-    return this.authService.login(body)
+    return await this.authService.login(body);
   }
 
-  // ✅ Route : POST /auth/forgot-password
+  // ✅ Étape 1 : envoi du code par mail
   @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string) {
-    return this.authService.sendResetCode(email)
+  async forgotPassword(@Body() body: { email: string }) {
+    if (!body.email) throw new BadRequestException('Email requis');
+    return await this.authService.sendResetCode(body.email);
   }
 
-  // ✅ Route : POST /auth/verify-reset-code
+  // ✅ Étape 2 : vérification du code
   @Post('verify-reset-code')
   async verifyCode(@Body() body: { email: string; code: string }) {
-    return this.authService.verifyResetCode(body.email, body.code)
+    return await this.authService.verifyResetCode(body.email, body.code);
   }
 
-  // ✅ Route : POST /auth/reset-password
+  // ✅ Étape 3 : nouveau mot de passe
   @Post('reset-password')
   async resetPassword(
     @Body() body: { email: string; code: string; newPassword: string },
   ) {
-    return this.authService.resetPassword(body.email, body.code, body.newPassword)
+    return await this.authService.resetPassword(
+      body.email,
+      body.code,
+      body.newPassword,
+    );
   }
 }

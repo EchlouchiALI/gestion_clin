@@ -18,14 +18,22 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const res = await axios.post("http://localhost:3001/auth/login", { email, password })
-      const token = res.data.access_token
-      const user = res.data.user
+      const res = await axios.post("http://localhost:3001/auth/login", {
+        email,
+        password,
+      })
 
-      localStorage.setItem("token", token)
-      localStorage.setItem("user", JSON.stringify(user)) // facultatif si tu veux y accéder facilement
+      const { access_token, user } = res.data
 
-      // Redirection selon le rôle
+      if (!access_token || !user) {
+        throw new Error("Réponse invalide du serveur")
+      }
+
+      // ✅ Stocker le token dans localStorage
+      localStorage.setItem("token", access_token)
+      localStorage.setItem("user", JSON.stringify(user))
+
+      // ✅ Redirection selon le rôle
       if (user.role === "admin") {
         router.push("/dashboard/admin")
       } else if (user.role === "medecin") {
@@ -33,8 +41,9 @@ export default function LoginPage() {
       } else {
         router.push("/dashboard/patient")
       }
-    } catch (err) {
-      setError("Identifiants incorrects. Veuillez réessayer.")
+    } catch (err: any) {
+      console.error("Erreur de login :", err)
+      setError("Identifiants incorrects ou erreur serveur.")
     } finally {
       setIsLoading(false)
     }

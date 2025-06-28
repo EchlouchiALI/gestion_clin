@@ -3,12 +3,12 @@ import {
   Get,
   UseGuards,
   Request,
-} from '@nestjs/common'
-import { Roles } from 'src/common/decorators/roles.decorator'
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard'
-import { RolesGuard } from 'src/common/guards/roles.guard'
-import { UsersService } from 'src/users/users.service'
-import { RendezvousService } from 'src/rendezvous/rendezvous.service'
+} from '@nestjs/common';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { UsersService } from 'src/users/users.service';
+import { RendezvousService } from 'src/rendezvous/rendezvous.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('patient')
@@ -16,18 +16,20 @@ import { RendezvousService } from 'src/rendezvous/rendezvous.service'
 export class PatientsController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly rendezvousService: RendezvousService
+    private readonly rendezvousService: RendezvousService,
   ) {}
 
+  // 🔐 Obtenir le profil du patient connecté
   @Get('me')
   async getMyProfile(@Request() req) {
-    const userId = req.user.sub
-    return this.usersService.findById(userId)
+    const userId = req.user.sub;
+    return this.usersService.findById(userId);
   }
 
+  // 🔐 Obtenir les rendez-vous du patient connecté
   @Get('rendezvous')
   async getMyRendezvous(@Request() req) {
-    const userId = req.user.sub
-    return this.rendezvousService.findByPatient(userId)
+    const userId = req.user.sub;
+    return this.rendezvousService.findByPatient(userId);
   }
 }

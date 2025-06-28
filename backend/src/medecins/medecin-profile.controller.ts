@@ -3,13 +3,18 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MedecinsService } from './medecins.service';
 import { RendezvousService } from 'src/rendezvous/rendezvous.service';
 
-@Controller('medecin')
+@Controller('medecin') // base route : /medecin
 @UseGuards(JwtAuthGuard)
 export class MedecinProfileController {
   constructor(
     private readonly medecinsService: MedecinsService,
     private readonly rendezvousService: RendezvousService,
   ) {}
+
+  @Get('profile') // 👈 ajoute cette route
+  getProfile(@Req() req) {
+    return this.medecinsService.findOne(+req.user.id);
+  }
 
   @Get('patients')
   getMyPatients(@Req() req) {

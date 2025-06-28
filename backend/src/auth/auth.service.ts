@@ -12,7 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/user.entity';
 import { RegisterPatientDto } from './dto/register-patient.dto';
 import { LoginDto } from './dto/login.dto';
-import { MailService } from '../mail/mail.service'; // ✅ Import mail service
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +22,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly mailService: MailService, // ✅ Inject mail service
+    private readonly mailService: MailService,
   ) {}
 
   // ✅ Enregistrement
@@ -51,8 +51,9 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
+    // ✅ Important : utiliser "sub" comme clé de l'ID dans le payload
     const token = this.jwtService.sign({
-      id: user.id,
+      sub: user.id,
       email: user.email,
       role: user.role,
     });
@@ -77,7 +78,7 @@ export class AuthService {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     this.codeMap.set(email, code);
 
-    await this.mailService.sendResetCode(email, code); // ✅ Envoi du mail
+    await this.mailService.sendResetCode(email, code);
     return { message: 'Code envoyé avec succès' };
   }
 
@@ -103,7 +104,7 @@ export class AuthService {
 
     user.password = await bcrypt.hash(newPassword, 10);
     await this.userRepo.save(user);
-    this.codeMap.delete(email); // ✅ Supprime le code
+    this.codeMap.delete(email);
 
     return { message: "Mot de passe mis à jour avec succès" };
   }

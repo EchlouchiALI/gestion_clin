@@ -25,6 +25,7 @@ export class RendezvousService {
     private readonly mailService: MailService,
   ) {}
 
+  // 🔍 Lister tous les rendez-vous (admin)
   async findAllForAdmin() {
     return this.rendezvousRepo.find({
       relations: ['patient', 'medecin'],
@@ -32,6 +33,7 @@ export class RendezvousService {
     });
   }
 
+  // 🔍 Lister les RDV d’un patient
   async findByPatient(patientId: number) {
     return this.rendezvousRepo.find({
       where: { patient: { id: patientId } },
@@ -40,14 +42,7 @@ export class RendezvousService {
     });
   }
 
-  async findByPatientId(patientId: number) {
-    return this.rendezvousRepo.find({
-      where: { patient: { id: patientId } },
-      relations: ['medecin'],
-      order: { date: 'DESC' },
-    });
-  }
-
+  // 🔍 Lister les RDV d’un médecin
   async findByMedecinId(medecinId: number) {
     return this.rendezvousRepo.find({
       where: { medecin: { id: medecinId } },
@@ -56,6 +51,7 @@ export class RendezvousService {
     });
   }
 
+  // ➕ Créer un rendez-vous (admin)
   async createByAdmin(data: {
     patientId: number;
     medecinId: number;
@@ -111,6 +107,7 @@ export class RendezvousService {
     return saved;
   }
 
+  // ❌ Supprimer un rendez-vous
   async delete(id: number) {
     const rdv = await this.rendezvousRepo.findOne({ where: { id } });
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
@@ -118,6 +115,7 @@ export class RendezvousService {
     return { message: 'Rendez-vous supprimé' };
   }
 
+  // 📄 Générer un PDF pour un RDV
   async generatePdfFor(id: number): Promise<Buffer> {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
@@ -138,6 +136,7 @@ export class RendezvousService {
     });
   }
 
+  // 🔄 Modifier un rendez-vous
   async update(id: number, data: {
     patientId?: number;
     medecinId?: number;
@@ -173,16 +172,14 @@ export class RendezvousService {
     return await this.rendezvousRepo.save(rdv);
   }
 
+  // 🔁 Mettre à jour les RDV passés (manuel ou CRON)
   async markPastAppointments() {
     const now = moment();
+    const futurs = await this.rendezvousRepo.find({ where: { statut: 'à venir' } });
 
-    const pastAppointments = await this.rendezvousRepo.find({
-      where: { statut: 'à venir' },
-    });
-
-    const toUpdate = pastAppointments.filter(rdv => {
-      const rdvDateTime = moment(`${rdv.date} ${rdv.heure}`, 'YYYY-MM-DD HH:mm');
-      return rdvDateTime.isBefore(now);
+    const toUpdate = futurs.filter((rdv) => {
+      const datetime = moment(`${rdv.date} ${rdv.heure}`, 'YYYY-MM-DD HH:mm');
+      return datetime.isBefore(now);
     });
 
     for (const rdv of toUpdate) {
@@ -193,6 +190,7 @@ export class RendezvousService {
     return { updated: toUpdate.length };
   }
 
+  // 🔁 Cron qui exécute markPastAppointments chaque minute
   @Cron('*/1 * * * *')
   handleCronUpdate() {
     this.markPastAppointments();
