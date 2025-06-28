@@ -23,7 +23,10 @@ export class Patient {
   @Column({ nullable: true })
   dateNaissance?: string;
 
-  @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
+  @ManyToOne(() => Medecin, (medecin) => medecin.patients, {
+    nullable: true,
+    onDelete: 'CASCADE', // ✅ suppression en cascade si le médecin est supprimé
+  })
   medecin: Medecin;
 
   @OneToMany(() => Ordonnance, (ordonnance) => ordonnance.patient)

@@ -253,36 +253,49 @@ await axios.patch(`http://localhost:3001/admin/patients/${editingPatient.id}`, {
 
         {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100">Total Patients</p>
-                <p className="text-3xl font-bold">{patients.length}</p>
-              </div>
-              <User className="w-12 h-12 text-blue-200" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100">Résultats</p>
-                <p className="text-3xl font-bold">{filteredPatients.length}</p>
-              </div>
-              <Search className="w-12 h-12 text-green-200" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100">Âge Moyen</p>
-                <p className="text-3xl font-bold">
-                  {patients.length > 0 ? Math.round(patients.reduce((sum, p) => sum + p.age, 0) / patients.length) : 0}
-                </p>
-              </div>
-              <Calendar className="w-12 h-12 text-purple-200" />
-            </div>
-          </div>
-        </div>
+  {/* Total Patients */}
+  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-blue-100">Total Patients</p>
+        <p className="text-3xl font-bold">{patients.length}</p>
+      </div>
+      <User className="w-12 h-12 text-blue-200" />
+    </div>
+  </div>
+
+  {/* Résultats */}
+  <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-green-100">Résultats</p>
+        <p className="text-3xl font-bold">{filteredPatients.length}</p>
+      </div>
+      <Search className="w-12 h-12 text-green-200" />
+    </div>
+  </div>
+
+  {/* Âge Moyen */}
+  <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-purple-100">Âge Moyen</p>
+        <p className="text-3xl font-bold">
+          {(() => {
+            const validAges = patients
+              .map((p) => Number(p.age))
+              .filter((age) => !isNaN(age) && age > 0);
+            return validAges.length > 0
+              ? Math.round(validAges.reduce((sum, age) => sum + age, 0) / validAges.length)
+              : 0;
+          })()}
+        </p>
+      </div>
+      <Calendar className="w-12 h-12 text-purple-200" />
+    </div>
+  </div>
+</div>
+
 
         {loading ? (
           <div className="text-center py-12">

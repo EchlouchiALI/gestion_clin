@@ -116,25 +116,40 @@ export default function PageGestionPatients() {
   const deletePatient = async (patientId: number) => {
     try {
       setActionLoading(true)
+  
+      const token = localStorage.getItem("token")
+      if (!token) throw new Error("Token non trouvé")
+  
       const res = await fetch(`http://localhost:3001/medecin/patients/${patientId}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       })
-
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)
-
+  
+      if (res.status === 404) {
+        throw new Error("Patient introuvable ou non autorisé")
+      }
+  
+      if (!res.ok) {
+        const errorBody = await res.text()
+        throw new Error(`Erreur ${res.status}: ${errorBody}`)
+      }
+  
       setPatients((prev) => prev.filter((p) => p.id !== patientId))
       setModalType(null)
       setSelectedPatient(null)
-
-      alert("Patient supprimé avec succès!")
+  
+      alert("✅ Patient supprimé avec succès")
     } catch (err: any) {
       console.error("Erreur lors de la suppression:", err)
-      alert(`Erreur lors de la suppression: ${err.message}`)
+      alert(`❌ Erreur lors de la suppression : ${err.message}`)
     } finally {
       setActionLoading(false)
     }
   }
+  
 
   const sendMessage = async (messageData: { subject: string; message: string }) => {
     try {
@@ -142,7 +157,7 @@ export default function PageGestionPatients() {
       const res = await fetch(`http://localhost:3001/medecin/patients/${selectedPatient?.id}/message`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(messageData),
+        body: JSON.stringify({ content: `${messageData.subject}\n\n${messageData.message}` }),
       })
 
       if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)

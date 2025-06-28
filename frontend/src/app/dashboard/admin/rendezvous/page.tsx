@@ -66,7 +66,8 @@ export default function AdminRendezVousPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const sorted = res.data.sort(
-        (a: RendezVous, b: RendezVous) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        (a: RendezVous, b: RendezVous) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
       )
       setRendezvousList(sorted)
     } catch (err) {
@@ -76,31 +77,34 @@ export default function AdminRendezVousPage() {
       setLoading(false)
     }
   }
-
+  
   const fetchPatients = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const res = await axios.get("http://localhost:3001/admin/patients", {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setPatients(res.data)
+      });
+      setPatients(res.data);
     } catch (err) {
-      console.error("Erreur chargement patients", err)
+      console.error("Erreur chargement patients", err);
+      toast.error("Impossible de charger les patients");
     }
-  }
-
+  };
+  
+  
   const fetchMedecins = async () => {
     try {
       const token = localStorage.getItem("token")
-      const res = await axios.get("http://localhost:3001/admin/medecins", {
+      const res = await axios.get("http://localhost:3001/medecin/admin/medecins", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setMedecins(res.data)
     } catch (err) {
       console.error("Erreur chargement médecins", err)
+      toast.error("Erreur chargement médecins")
     }
   }
-
+  
   const deleteRendezvous = async (id: number) => {
     if (!confirm("Supprimer ce rendez-vous ?")) return
     try {
@@ -115,7 +119,7 @@ export default function AdminRendezVousPage() {
       toast.error("Erreur lors de la suppression")
     }
   }
-
+  
   const handleAddRendezVous = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -131,17 +135,18 @@ export default function AdminRendezVousPage() {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       )
       toast.success("Rendez-vous ajouté avec succès")
       setShowAddForm(false)
       setFormData({ patientId: "", medecinId: "", date: "", heure: "", motif: "" })
       fetchRendezvous()
-    } catch {
+    } catch (err) {
+      console.error("Erreur ajout rendez-vous :", err)
       toast.error("Erreur lors de l'ajout du rendez-vous")
     }
   }
-
+  
   const handleEditRendezVous = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingRdv) return
@@ -159,17 +164,19 @@ export default function AdminRendezVousPage() {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       )
       toast.success("Rendez-vous modifié avec succès")
       setShowEditForm(false)
       setEditingRdv(null)
       setEditFormData({ patientId: "", medecinId: "", date: "", heure: "", motif: "" })
       fetchRendezvous()
-    } catch {
+    } catch (err) {
+      console.error("Erreur modification rendez-vous :", err)
       toast.error("Erreur lors de la modification du rendez-vous")
     }
   }
+  
   
 
   const openEditForm = (rdv: RendezVous) => {
@@ -549,12 +556,13 @@ export default function AdminRendezVousPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
-                        <Button
-                          onClick={() => window.open(`http://localhost:3001/rendezvous/pdf/${rdv.id}`, "_blank")}
-                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded text-sm"
-                        >
-                          PDF
-                        </Button>
+                      <Button
+  onClick={() => window.open(`http://localhost:3001/rendezvous/${rdv.id}/pdf`, "_blank")}
+  className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded text-sm"
+>
+  PDF
+</Button>
+
                         <Button
                           onClick={() => openEditForm(rdv)}
                           className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1 rounded text-sm"

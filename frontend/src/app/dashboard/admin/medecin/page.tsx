@@ -82,9 +82,9 @@ export default function MedecinsPage() {
   const fetchMedecins = async () => {
     try {
       const token = localStorage.getItem("token")
-      const res = await axios.get("http://localhost:3001/admin/medecins", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await axios.get("http://localhost:3001/medecin/admin/medecins", {
+  headers: { Authorization: `Bearer ${token}` },
+    })
       setMedecins(res.data)
     } catch (err) {
       console.error(err)
@@ -98,9 +98,9 @@ export default function MedecinsPage() {
     if (!confirm("Supprimer ce médecin ?")) return
     try {
       const token = localStorage.getItem("token")
-      await axios.delete(`http://localhost:3001/admin/medecins/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.delete(`http://localhost:3001/medecin/admin/medecins/${id}`, {
+  headers: { Authorization: `Bearer ${token}` },
+})
       setMedecins((prev) => prev.filter((m) => m.id !== id))
       toast.success("Médecin supprimé")
     } catch {
@@ -118,7 +118,7 @@ export default function MedecinsPage() {
     try {
       const token = localStorage.getItem("token")
       await axios.post(
-        "http://localhost:3001/admin/medecins/message",
+        "http://localhost:3001/medecin/admin/medecins/message", // ✅ Correction ici
         {
           email: selectedEmail,
           content: message,
@@ -127,23 +127,25 @@ export default function MedecinsPage() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       )
       toast.success(`Message envoyé à ${selectedEmail}`)
-    } catch {
+    } catch (err: any) {
+      console.error("Erreur envoi mail:", err.response?.data || err.message)
       toast.error("Erreur lors de l'envoi de l'email")
     }
     setMessageModalOpen(false)
     setMessage("")
   }
+  
 
   const handleAddMedecin = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const token = localStorage.getItem("token")
-      await axios.post("http://localhost:3001/admin/medecins", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.post("http://localhost:3001/medecin/admin/medecins", formData, {
+  headers: { Authorization: `Bearer ${token}` },
+})
       toast.success("Médecin ajouté avec succès")
       setAddModalOpen(false)
       setFormData({ nom: "", prenom: "", email: "", specialite: "", telephone: "" })
@@ -168,22 +170,33 @@ export default function MedecinsPage() {
   const handleEditMedecin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingMedecin) return
-
+  
     try {
       const token = localStorage.getItem("token")
-      await axios.put(`http://localhost:3001/admin/medecins/${editingMedecin.id}`, editFormData, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.put(
+        `http://localhost:3001/medecin/admin/medecins/${editingMedecin.id}`,
+        editFormData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
       toast.success("Médecin modifié avec succès")
       setEditModalOpen(false)
       setEditingMedecin(null)
-      setEditFormData({ nom: "", prenom: "", email: "", specialite: "", telephone: "" })
+      setEditFormData({
+        nom: "",
+        prenom: "",
+        email: "",
+        specialite: "",
+        telephone: "",
+      })
       fetchMedecins()
     } catch {
       toast.error("Erreur lors de la modification du médecin")
     }
   }
-
+  
+      
   useEffect(() => {
     fetchMedecins()
   }, [])
@@ -522,3 +535,4 @@ export default function MedecinsPage() {
     </div>
   )
 }
+  

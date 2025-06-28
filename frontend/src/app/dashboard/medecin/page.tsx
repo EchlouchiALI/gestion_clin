@@ -31,7 +31,7 @@ export default function DashboardMedecinPage() {
           return
         }
 
-        const res = await fetch("http://localhost:3001/medecins/me/profile", {
+        const res = await fetch("http://localhost:3001/medecin/me/profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
