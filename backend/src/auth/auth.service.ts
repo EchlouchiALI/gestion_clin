@@ -13,19 +13,20 @@ import { User } from '../users/user.entity';
 import { RegisterPatientDto } from './dto/register-patient.dto';
 import { LoginDto } from './dto/login.dto';
 import { MailService } from '../mail/mail.service';
+import { MedecinsService } from '../medecins/medecins.service'; // 👈 Ajout
 
 @Injectable()
 export class AuthService {
-  private codeMap: Map<string, string> = new Map(); // email => code temporaire
+  private codeMap: Map<string, string> = new Map();
 
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly medecinsService: MedecinsService, // 👈 Injection
   ) {}
 
-  // ✅ Enregistrement
   async registerPatient(data: RegisterPatientDto): Promise<User> {
     const { password, ...rest } = data;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -39,7 +40,6 @@ export class AuthService {
     return await this.userRepo.save(newUser);
   }
 
-  // ✅ Connexion avec JWT
   async login(data: LoginDto) {
     const user = await this.userRepo.findOneBy({ email: data.email });
     if (!user) {
@@ -51,7 +51,29 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
-    // ✅ Important : utiliser "sub" comme clé de l'ID dans le payload
+    // ✅ Si c’est un médecin, récupérer le vrai profil
+    if (user.role === 'medecin') {
+      const medecin = await this.medecinsService.findByEmail(user.email);
+
+      const token = this.jwtService.sign({
+        sub: medecin.id, // 👈 ID du médecin, pas user.id
+        email: medecin.email,
+        role: user.role,
+      });
+
+      return {
+        access_token: token,
+        user: {
+          id: medecin.id,
+          nom: medecin.nom,
+          prenom: medecin.prenom,
+          email: medecin.email,
+          role: user.role,
+        },
+      };
+    }
+
+    // ✅ Pour les autres (patients, admins)
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -70,7 +92,6 @@ export class AuthService {
     };
   }
 
-  // ✅ Étape 1 : Envoi du code par mail
   async sendResetCode(email: string) {
     const user = await this.userRepo.findOneBy({ email });
     if (!user) throw new NotFoundException("Email introuvable");
@@ -82,7 +103,6 @@ export class AuthService {
     return { message: 'Code envoyé avec succès' };
   }
 
-  // ✅ Étape 2 : Vérification du code
   async verifyResetCode(email: string, code: string) {
     const savedCode = this.codeMap.get(email);
     if (!savedCode || savedCode !== code) {
@@ -92,7 +112,6 @@ export class AuthService {
     return { message: 'Code vérifié avec succès' };
   }
 
-  // ✅ Étape 3 : Réinitialisation du mot de passe
   async resetPassword(email: string, code: string, newPassword: string) {
     const savedCode = this.codeMap.get(email);
     if (!savedCode || savedCode !== code) {

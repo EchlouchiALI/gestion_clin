@@ -1,433 +1,702 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, Users, Mail, AlertCircle, UserPlus, Edit, Trash2, MessageSquare, Phone, Calendar } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
-import type { Patient, CreatePatientData, UpdatePatientData } from "@/types/patient"
-import { PatientForm } from "@/components/patient-form"
-import { MessageForm } from "@/components/message-form"
-import { DeleteConfirmation } from "@/components/delete-confirmation"
+import {
+  Pencil,
+  Trash2,
+  FileDown,
+  PlusCircle,
+  Users,
+  Mail,
+  Phone,
+  Calendar,
+  User,
+  Search,
+  AlertCircle,
+} from "lucide-react"
 
-type ModalType = "add" | "edit" | "delete" | "message" | null
+interface Patient {
+  id: number
+  nom: string
+  prenom: string
+  email: string
+  telephone: string
+  sexe: string
+  dateNaissance: string
+  createdAt?: string
+}
+
+interface PatientForm {
+  nom: string
+  prenom: string
+  email: string
+  telephone: string
+  sexe: string
+  dateNaissance: string
+}
+
+// Simple toast function
+const toast = ({ title, description, variant }: { title: string; description: string; variant?: string }) => {
+  if (variant === "destructive") {
+    alert(`❌ ${title}: ${description}`)
+  } else {
+    alert(`✅ ${title}: ${description}`)
+  }
+}
 
 export default function PageGestionPatients() {
   const [patients, setPatients] = useState<Patient[]>([])
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [modalType, setModalType] = useState<ModalType>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
+  const [contactMessage, setContactMessage] = useState("")
 
-  // API Functions
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("token")
-    return {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    }
+  const [form, setForm] = useState<PatientForm>({
+    nom: "",
+    prenom: "",
+    email: "",
+    telephone: "",
+    sexe: "Homme",
+    dateNaissance: "",
+  })
+
+  const router = useRouter()
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+  const resetForm = () => {
+    setForm({
+      nom: "",
+      prenom: "",
+      email: "",
+      telephone: "",
+      sexe: "Homme",
+      dateNaissance: "",
+    })
   }
 
   const fetchPatients = async () => {
+    if (!token) {
+      router.push("/login")
+      return
+    }
+
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
-      if (!token) throw new Error("Aucun token trouvé")
-
       const res = await fetch("http://localhost:3001/medecin/patients", {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)
+      if (!res.ok) throw new Error("Erreur lors du chargement")
 
       const data = await res.json()
-      if (!Array.isArray(data)) throw new Error("Format de réponse invalide")
-
       setPatients(data)
-      setFilteredPatients(data)
-      setError(null)
-    } catch (err: any) {
-      console.error("Erreur de chargement des patients:", err)
-      setError(err.message)
+    } catch (err) {
+      console.error(err)
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les patients",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const createPatient = async (patientData: CreatePatientData) => {
-    try {
-      setActionLoading(true)
-      const res = await fetch("http://localhost:3001/medecin/patients", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(patientData),
-      })
-
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)
-
-      const newPatient = await res.json()
-      setPatients((prev) => [...prev, newPatient])
-      setModalType(null)
-
-      // Show success message
-      alert("Patient ajouté avec succès!")
-    } catch (err: any) {
-      console.error("Erreur lors de l'ajout:", err)
-      alert(`Erreur lors de l'ajout: ${err.message}`)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const updatePatient = async (data: CreatePatientData | UpdatePatientData) => {
-    if (!('id' in data)) {
-      throw new Error("ID du patient manquant pour la mise à jour");
-    }
-  
-    try {
-      setActionLoading(true);
-  
-      const res = await fetch(`http://localhost:3001/medecin/patients/${data.id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-      });
-  
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
-  
-      const updated = await res.json();
-      setPatients((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setModalType(null);
-      alert("Patient modifié avec succès !");
-    } catch (err: any) {
-      alert(`Erreur lors de la modification: ${err.message}`);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-  
-
-  const deletePatient = async (patientId: number) => {
-    try {
-      setActionLoading(true)
-  
-      const token = localStorage.getItem("token")
-      if (!token) throw new Error("Token non trouvé")
-  
-      const res = await fetch(`http://localhost:3001/medecin/patients/${patientId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-  
-      if (res.status === 404) {
-        throw new Error("Patient introuvable ou non autorisé")
-      }
-  
-      if (!res.ok) {
-        const errorBody = await res.text()
-        throw new Error(`Erreur ${res.status}: ${errorBody}`)
-      }
-  
-      setPatients((prev) => prev.filter((p) => p.id !== patientId))
-      setModalType(null)
-      setSelectedPatient(null)
-  
-      alert("✅ Patient supprimé avec succès")
-    } catch (err: any) {
-      console.error("Erreur lors de la suppression:", err)
-      alert(`❌ Erreur lors de la suppression : ${err.message}`)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-  
-
-  const sendMessage = async (messageData: { subject: string; message: string }) => {
-    try {
-      setActionLoading(true)
-      const res = await fetch(`http://localhost:3001/medecin/patients/${selectedPatient?.id}/message`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ content: `${messageData.subject}\n\n${messageData.message}` }),
-      })
-
-      if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`)
-
-      setModalType(null)
-      setSelectedPatient(null)
-
-      alert("Message envoyé avec succès!")
-    } catch (err: any) {
-      console.error("Erreur lors de l'envoi:", err)
-      alert(`Erreur lors de l'envoi: ${err.message}`)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  // Effects
   useEffect(() => {
     fetchPatients()
   }, [])
 
-  useEffect(() => {
-    const filtered = patients.filter(
-      (patient) =>
-        patient.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (patient.telephone && patient.telephone.includes(searchTerm)),
-    )
-    setFilteredPatients(filtered)
-  }, [searchTerm, patients])
+  const validateForm = (formData: PatientForm): boolean => {
+    if (!formData.nom.trim() || !formData.prenom.trim() || !formData.email.trim()) {
+      toast({
+        title: "Erreur de validation",
+        description: "Nom, prénom et email sont obligatoires",
+        variant: "destructive",
+      })
+      return false
+    }
 
-  // Event Handlers
-  const handleRetry = () => {
-    setError(null)
-    fetchPatients()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Erreur de validation",
+        description: "Format d'email invalide",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    return true
   }
 
-  const openModal = (type: ModalType, patient?: Patient) => {
-    setModalType(type)
-    setSelectedPatient(patient || null)
+  const handleCreate = async () => {
+    if (!validateForm(form)) return
+
+    try {
+      const res = await fetch("http://localhost:3001/medecin/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      })
+
+      if (!res.ok) throw new Error("Erreur lors de la création")
+
+      toast({
+        title: "Succès",
+        description: "Patient ajouté avec succès",
+      })
+
+      resetForm()
+      setIsAddDialogOpen(false)
+      fetchPatients()
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter le patient",
+        variant: "destructive",
+      })
+    }
   }
 
-  const closeModal = () => {
-    setModalType(null)
-    setSelectedPatient(null)
+  const handleEdit = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setForm({
+      nom: patient.nom,
+      prenom: patient.prenom,
+      email: patient.email,
+      telephone: patient.telephone,
+      sexe: patient.sexe,
+      dateNaissance: patient.dateNaissance,
+    })
+    setIsEditDialogOpen(true)
   }
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Non renseigné"
-    return new Date(dateString).toLocaleDateString("fr-FR")
+  const handleUpdate = async () => {
+    if (!selectedPatient || !validateForm(form)) return
+
+    try {
+      const res = await fetch(`http://localhost:3001/medecin/patients/${selectedPatient.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      })
+
+      if (!res.ok) throw new Error("Erreur lors de la modification")
+
+      toast({
+        title: "Succès",
+        description: "Patient modifié avec succès",
+      })
+
+      resetForm()
+      setIsEditDialogOpen(false)
+      setSelectedPatient(null)
+      fetchPatients()
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le patient",
+        variant: "destructive",
+      })
+    }
   }
 
-  // Loading State
-  if (loading) {
-    return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="mb-6">
-          <Skeleton className="h-10 w-full max-w-md" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-32 mb-2" />
-                <Skeleton className="h-3 w-48" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
+  const handleDelete = async (patient: Patient) => {
+    if (!confirm(`Confirmer la suppression de ${patient.prenom} ${patient.nom} ?`)) return
+
+    try {
+      const res = await fetch(`http://localhost:3001/medecin/patients/${patient.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) throw new Error("Erreur lors de la suppression")
+
+      toast({
+        title: "Succès",
+        description: "Patient supprimé avec succès",
+      })
+
+      fetchPatients()
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le patient",
+        variant: "destructive",
+      })
+    }
   }
 
-  // Error State
-  if (error) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="flex items-center justify-between">
-              <span>Erreur: {error}</span>
-              <Button variant="outline" size="sm" onClick={handleRetry}>
-                Réessayer
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
+  const handleContact = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setContactMessage("")
+    setIsContactDialogOpen(true)
+  }
+
+  const handleSendMessage = async () => {
+    if (!selectedPatient || !contactMessage.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir un message",
+        variant: "destructive",
+      })
+      return
+    }
+  
+    try {
+      const res = await fetch(`http://localhost:3001/medecin/patients/${selectedPatient.id}/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: contactMessage }),
+      })
+  
+      if (!res.ok) throw new Error("Erreur lors de l'envoi")
+  
+      toast({
+        title: "Succès",
+        description: "Message envoyé avec succès",
+      })
+  
+      setContactMessage("")
+      setIsContactDialogOpen(false)
+      setSelectedPatient(null)
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer le message",
+        variant: "destructive",
+      })
+    }
+  }
+  
+
+  const handleDownloadPdf = async (patient: Patient) => {
+    try {
+      const res = await fetch(`http://localhost:3001/medecin/patients/${patient.id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) throw new Error("Erreur lors du téléchargement")
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `patient-${patient.prenom}-${patient.nom}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Succès",
+        description: "PDF téléchargé avec succès",
+      })
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le PDF",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const filteredPatients = patients.filter(
+    (patient) =>
+      patient.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.email.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  const calculateAge = (dateNaissance: string): number => {
+    const today = new Date()
+    const birthDate = new Date(dateNaissance)
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+
+    return age
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Gestion des Patients</h1>
-        </div>
-        <p className="text-muted-foreground">Gérez et consultez la liste de vos patients</p>
-      </div>
-
-      {/* Search and Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Rechercher un patient..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button onClick={() => openModal("add")} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Ajouter un patient
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total patients</span>
-            </div>
-            <p className="text-2xl font-bold">{patients.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Résultats</span>
-            </div>
-            <p className="text-2xl font-bold">{filteredPatients.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Avec email</span>
-            </div>
-            <p className="text-2xl font-bold">{patients.filter((p) => p.email).length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Avec téléphone</span>
-            </div>
-            <p className="text-2xl font-bold">{patients.filter((p) => p.telephone).length}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Patient List */}
-      {filteredPatients.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{searchTerm ? "Aucun patient trouvé" : "Aucun patient"}</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ? "Essayez de modifier votre recherche" : "Commencez par ajouter votre premier patient"}
-            </p>
-            {searchTerm && (
-              <Button variant="outline" onClick={() => setSearchTerm("")}>
-                Effacer la recherche
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPatients.map((patient) => (
-            <Card key={patient.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  {patient.prenom} {patient.nom}
-                </CardTitle>
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {patient.email}
-                  </div>
-                  {patient.telephone && (
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {patient.telephone}
-                    </div>
-                  )}
-                  {patient.dateNaissance && (
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(patient.dateNaissance)}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="secondary">ID: {patient.id}</Badge>
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => openModal("edit", patient)} className="flex-1">
-                    <Edit className="h-3 w-3 mr-1" />
-                    Modifier
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => openModal("message", patient)} className="flex-1">
-                    <MessageSquare className="h-3 w-3 mr-1" />
-                    Message
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openModal("delete", patient)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Modals */}
-      {modalType && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            {modalType === "add" && (
-              <PatientForm onSubmit={createPatient} onCancel={closeModal} isLoading={actionLoading} />
-            )}
-            {modalType === "edit" && selectedPatient && (
-              <PatientForm
-                patient={selectedPatient}
-                onSubmit={updatePatient}
-                onCancel={closeModal}
-                isLoading={actionLoading}
-              />
-            )}
-            {modalType === "delete" && selectedPatient && (
-              <DeleteConfirmation
-                patient={selectedPatient}
-                onConfirm={() => deletePatient(selectedPatient.id)}
-                onCancel={closeModal}
-                isLoading={actionLoading}
-              />
-            )}
-            {modalType === "message" && selectedPatient && (
-              <MessageForm
-                patient={selectedPatient}
-                onSubmit={sendMessage}
-                onCancel={closeModal}
-                isLoading={actionLoading}
-              />
-            )}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">Gestion des Patients</h1>
           </div>
+          <p className="text-gray-600">Gérez vos patients et leurs informations</p>
         </div>
-      )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{patients.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hommes</CardTitle>
+              <User className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{patients.filter((p) => p.sexe === "Homme").length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Femmes</CardTitle>
+              <User className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{patients.filter((p) => p.sexe === "Femme").length}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Actions Bar */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Rechercher un patient..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Ajouter un patient
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Nouveau Patient</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="nom">Nom *</Label>
+                        <Input
+                          id="nom"
+                          value={form.nom}
+                          onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                          placeholder="Nom de famille"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="prenom">Prénom *</Label>
+                        <Input
+                          id="prenom"
+                          value={form.prenom}
+                          onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                          placeholder="Prénom"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="email@exemple.com"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="telephone">Téléphone</Label>
+                      <Input
+                        id="telephone"
+                        value={form.telephone}
+                        onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                        placeholder="06 12 34 56 78"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="sexe">Sexe</Label>
+                        <Select value={form.sexe} onValueChange={(value) => setForm({ ...form, sexe: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Homme">Homme</SelectItem>
+                            <SelectItem value="Femme">Femme</SelectItem>
+                            <SelectItem value="Autre">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="dateNaissance">Date de naissance</Label>
+                        <Input
+                          id="dateNaissance"
+                          type="date"
+                          value={form.dateNaissance}
+                          onChange={(e) => setForm({ ...form, dateNaissance: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                        Annuler
+                      </Button>
+                      <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
+                        Enregistrer
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Patients List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Liste des Patients ({filteredPatients.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2">Chargement...</span>
+              </div>
+            ) : filteredPatients.length === 0 ? (
+              <div className="text-center py-8">
+                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">
+                  {searchTerm ? "Aucun patient trouvé pour cette recherche" : "Aucun patient enregistré"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredPatients.map((patient) => (
+                  <Card key={patient.id} className="border-l-4 border-l-blue-500">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {patient.prenom} {patient.nom}
+                            </h3>
+                            <Badge variant={patient.sexe === "Homme" ? "default" : "secondary"}>{patient.sexe}</Badge>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span>{patient.email}</span>
+                            </div>
+                            {patient.telephone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4" />
+                                <span>{patient.telephone}</span>
+                              </div>
+                            )}
+                            {patient.dateNaissance && (
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                <span>{calculateAge(patient.dateNaissance)} ans</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(patient)}
+                            className="hover:bg-blue-50"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleContact(patient)}
+                            className="hover:bg-green-50"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPdf(patient)}
+                            className="hover:bg-purple-50"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(patient)}
+                            className="hover:bg-red-50 text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier le Patient</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-nom">Nom *</Label>
+                  <Input id="edit-nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+                </div>
+                <div>
+                  <Label htmlFor="edit-prenom">Prénom *</Label>
+                  <Input
+                    id="edit-prenom"
+                    value={form.prenom}
+                    onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-email">Email *</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-telephone">Téléphone</Label>
+                <Input
+                  id="edit-telephone"
+                  value={form.telephone}
+                  onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-sexe">Sexe</Label>
+                  <Select value={form.sexe} onValueChange={(value) => setForm({ ...form, sexe: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Homme">Homme</SelectItem>
+                      <SelectItem value="Femme">Femme</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-dateNaissance">Date de naissance</Label>
+                  <Input
+                    id="edit-dateNaissance"
+                    type="date"
+                    value={form.dateNaissance}
+                    onChange={(e) => setForm({ ...form, dateNaissance: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleUpdate} className="bg-blue-600 hover:bg-blue-700">
+                  Mettre à jour
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Contact Dialog */}
+        <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Contacter le Patient</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Envoyez un message à {selectedPatient?.prenom} {selectedPatient?.nom}
+              </p>
+              <div>
+                <Label htmlFor="message">Message</Label>
+                <textarea
+                  id="message"
+                  className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Tapez votre message ici..."
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsContactDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleSendMessage} className="bg-green-600 hover:bg-green-700">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Envoyer
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

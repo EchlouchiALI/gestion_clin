@@ -153,4 +153,35 @@ export class PdfService {
       });
     });
   }
+  async generatePatientPDF(patient: any): Promise<Buffer> {
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+    const stream = new Writable({
+      write(chunk, _enc, next) {
+        chunks.push(chunk);
+        next();
+      },
+    });
+  
+    doc.pipe(stream);
+  
+    doc.fontSize(20).text('Dossier Patient', { align: 'center' }).moveDown();
+  
+    doc.fontSize(12).text(`ID : ${patient.id}`);
+    doc.text(`Nom : ${patient.nom}`);
+    doc.text(`Prénom : ${patient.prenom}`);
+    doc.text(`Email : ${patient.email}`);
+    doc.text(`Téléphone : ${patient.telephone}`);
+    doc.text(`Sexe : ${patient.sexe}`);
+    doc.text(`Date de naissance : ${patient.dateNaissance}`);
+  
+    doc.end();
+  
+    return new Promise<Buffer>((resolve) => {
+      stream.on('finish', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+  }
+  
 }

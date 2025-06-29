@@ -6,13 +6,15 @@ import { User } from '../users/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { MailModule } from '../mail/mail.module'
+import { MailModule } from '../mail/mail.module';
+import { MedecinsModule } from '../medecins/medecins.module'; // ✅ ajout ici
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     PassportModule,
     MailModule,
+    MedecinsModule, // ✅ ajout ici pour injecter MedecinsService
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,
