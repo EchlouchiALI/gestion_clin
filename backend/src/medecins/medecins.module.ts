@@ -11,17 +11,19 @@ import { MedecinProfileController } from './medecin-profile.controller';
 
 import { MailModule } from '../mail/mail.module';
 import { RendezvousModule } from '../rendezvous/rendezvous.module';
-import { PatientModule } from '../patient/patient.module'; // ✅ import du module
+import { PatientModule } from '../patient/patient.module';
+import { PdfModule } from '../pdf/pdf.module'; // ✅ Import du module PDF
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Medecin, Patient, Ordonnance]),
     MailModule,
     RendezvousModule,
-    PatientModule, // ✅ nécessaire pour injecter PatientService
+    PatientModule,
+    PdfModule, // ✅ Pour injecter PdfService dans MedecinsController
   ],
   controllers: [MedecinsController, MedecinProfileController],
   providers: [MedecinsService],
-  exports: [MedecinsService],
+  exports: [MedecinsService], // ✅ Pour l’utiliser ailleurs (ex: AuthService)
 })
 export class MedecinsModule {}

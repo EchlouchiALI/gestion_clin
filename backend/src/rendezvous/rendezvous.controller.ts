@@ -16,17 +16,19 @@ import { RendezvousService } from './rendezvous.service';
 import { UpdateRendezvousDto } from './dto/update-rendezvous.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
-@Controller('rendezvous')
+@Controller('rendezvous') // ✅ on ne protège pas tout le contrôleur d’un coup
 export class RendezvousController {
   constructor(private readonly rendezvousService: RendezvousService) {}
 
-  // ✅ [ADMIN] Lister tous les rendez-vous
+  // ✅ ADMIN - Liste de tous les rendez-vous
+  @UseGuards(JwtAuthGuard)
   @Get('admin/all')
   async findAll() {
     return this.rendezvousService.findAllForAdmin();
   }
 
-  // ✅ [ADMIN] Créer un rendez-vous
+  // ✅ ADMIN - Création de rendez-vous
+  @UseGuards(JwtAuthGuard)
   @Post('admin')
   async create(@Body() body: {
     patientId: number;
@@ -38,13 +40,15 @@ export class RendezvousController {
     return this.rendezvousService.createByAdmin(body);
   }
 
-  // ✅ [ADMIN] Supprimer un rendez-vous
+  // ✅ ADMIN - Suppression d’un rendez-vous
+  @UseGuards(JwtAuthGuard)
   @Delete('admin/:id')
   async delete(@Param('id') id: string) {
     return this.rendezvousService.delete(+id);
   }
 
-  // ✅ [ADMIN] Modifier un rendez-vous
+  // ✅ ADMIN - Modification d’un rendez-vous
+  @UseGuards(JwtAuthGuard)
   @Patch('admin/:id')
   async updateRendezvous(
     @Param('id') id: string,
@@ -53,12 +57,16 @@ export class RendezvousController {
     return this.rendezvousService.update(+id, body);
   }
 
-  // ✅ [TOUS] Générer et retourner le PDF d’un RDV
-  @UseGuards(JwtAuthGuard)
+  // ❌ Ne pas protéger cette route : accessible sans token
   @Get(':id/pdf')
   async getPdf(@Param('id') id: string, @Res() res: Response) {
     try {
       const buffer = await this.rendezvousService.generatePdfFor(+id);
+
+      if (!buffer) {
+        throw new HttpException('Rendez-vous introuvable', HttpStatus.NOT_FOUND);
+      }
+
       res.set({
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'inline; filename=rendezvous.pdf',
@@ -73,7 +81,8 @@ export class RendezvousController {
     }
   }
 
-  // ✅ Met à jour les statuts des RDV dépassés manuellement (peut aussi être lancé par CRON)
+  // ✅ Mise à jour des statuts des RDV (par CRON ou admin)
+  @UseGuards(JwtAuthGuard)
   @Post('update-status')
   async forceUpdate() {
     return this.rendezvousService.markPastAppointments();

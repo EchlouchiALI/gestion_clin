@@ -5,6 +5,7 @@ import { Medecin } from './medecin.entity';
 import { Patient } from '../patient/patient.entity';
 import { Ordonnance } from '../ordonnances/ordonnance.entity';
 
+
 @Injectable()
 export class MedecinsService {
   constructor(
@@ -23,10 +24,31 @@ export class MedecinsService {
     return this.medecinRepository.find();
   }
 
-  // 🔍 Trouver un médecin par ID
+  // ✅ Trouver un médecin par ID
   async findOne(id: number): Promise<Medecin> {
-    const medecin = await this.medecinRepository.findOne({ where: { id } });
-    if (!medecin) throw new NotFoundException('Médecin non trouvé');
+    const medecin = await this.medecinRepository.findOne({
+      where: { id },
+      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
+    });
+
+    if (!medecin) {
+      throw new NotFoundException('Médecin non trouvé');
+    }
+
+    return medecin;
+  }
+
+  // ✅ Trouver un médecin par e-mail (pour login/profile)
+  async findByEmail(email: string): Promise<Medecin> {
+    const medecin = await this.medecinRepository.findOne({
+      where: { email },
+      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
+    });
+
+    if (!medecin) {
+      throw new NotFoundException('Médecin non trouvé par email');
+    }
+
     return medecin;
   }
 
@@ -39,7 +61,9 @@ export class MedecinsService {
   // 🗑️ Supprimer un médecin
   async delete(id: number): Promise<void> {
     const result = await this.medecinRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Médecin non trouvé');
+    if (result.affected === 0) {
+      throw new NotFoundException('Médecin non trouvé');
+    }
   }
 
   // 🔍 Rechercher des médecins par nom ou spécialité

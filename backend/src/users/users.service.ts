@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import { RendezVous } from 'src/rendezvous/rendezvous.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,15 +14,37 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepo: Repository<User>,
+
+    @InjectRepository(RendezVous)
+    private readonly rendezvousRepo: Repository<RendezVous>,
   ) {}
 
   // ✅ Récupérer tous les utilisateurs d’un certain rôle
   async findAllByRole(role: 'admin' | 'medecin' | 'patient') {
-    return this.userRepo.find({ where: { role } });
+    return this.userRepo.find({
+      where: { role },
+      select: ['id', 'nom', 'prenom', 'email'],
+    });
   }
 
-  // ✅ Supprimer un utilisateur (admin ou patient)
+  // ✅ Supprimer un utilisateur (admin ou patient) si pas lié à un rendez-vous
   async deleteUser(id: string) {
+    const user = await this.userRepo.findOne({ where: { id: parseInt(id) } });
+    if (!user) throw new NotFoundException("Utilisateur introuvable");
+
+    const hasRdv = await this.rendezvousRepo.findOne({
+      where: [
+        { patient: { id: user.id } },
+        { medecin: { id: user.id } },
+      ],
+    });
+
+    if (hasRdv) {
+      throw new BadRequestException(
+        "Impossible de supprimer cet utilisateur : il est lié à un ou plusieurs rendez-vous.",
+      );
+    }
+
     await this.userRepo.delete(id);
     return { message: 'Utilisateur supprimé avec succès' };
   }

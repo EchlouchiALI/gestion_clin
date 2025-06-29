@@ -1,35 +1,33 @@
 import {
   Controller,
-  Get,
-  UseGuards,
+  Delete,
+  Param,
   Request,
+  UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
-import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { UsersService } from 'src/users/users.service';
-import { RendezvousService } from 'src/rendezvous/rendezvous.service';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { PatientService } from 'src/patient/patient.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('patient')
-@Controller('patients')
-export class PatientsController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly rendezvousService: RendezvousService,
-  ) {}
+@Roles('medecin')
+@Controller('medecin')
+export class MedecinController {
+  constructor(private readonly patientService: PatientService) {}
 
-  // 🔐 Obtenir le profil du patient connecté
-  @Get('me')
-  async getMyProfile(@Request() req) {
-    const userId = req.user.sub;
-    return this.usersService.findById(userId);
-  }
+  // ✅ Supprimer un patient appartenant au médecin connecté
+  @Delete('patients/:id')
+  async deletePatient(@Param('id') id: number, @Request() req) {
+    const patient = await this.patientService.findOne(id);
 
-  // 🔐 Obtenir les rendez-vous du patient connecté
-  @Get('rendezvous')
-  async getMyRendezvous(@Request() req) {
-    const userId = req.user.sub;
-    return this.rendezvousService.findByPatient(userId);
+    // Vérifie que le patient existe et appartient bien au médecin connecté
+    if (!patient || !patient.medecin || patient.medecin.id !== req.user.sub) {
+      throw new NotFoundException('Patient introuvable ou non autorisé');
+    }
+
+    await this.patientService.delete(id);
+    return { message: 'Patient supprimé' };
   }
 }
