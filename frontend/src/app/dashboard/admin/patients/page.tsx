@@ -90,6 +90,8 @@ export default function PatientsPage() {
       const res = await axios.get("http://localhost:3001/admin/patients", {
         headers: { Authorization: `Bearer ${token}` },
       })
+  
+      console.log("✅ Résultat API /admin/patients :", res.data) // 👈 ajoute ceci
       setPatients(res.data)
     } catch (err) {
       console.error(err)
@@ -98,6 +100,7 @@ export default function PatientsPage() {
       setLoading(false)
     }
   }
+  
 
   const deletePatient = async (id: string) => {
     if (!confirm("Supprimer ce patient ?")) return

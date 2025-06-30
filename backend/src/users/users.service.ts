@@ -23,7 +23,14 @@ export class UsersService {
   async findAllByRole(role: 'admin' | 'medecin' | 'patient') {
     return this.userRepo.find({
       where: { role },
-      select: ['id', 'nom', 'prenom', 'email'],
+      select: [
+        'id',
+        'nom',
+        'prenom',
+        'email',
+        'age',            // 🟢 Ajoute ceci
+        'lieuNaissance'   // 🟢 Et ceci
+      ],
     });
   }
 

@@ -46,3 +46,4 @@ export type PatientFormData = {
   lieuNaissance: string
   password?: string // requis uniquement pour création
 }
+

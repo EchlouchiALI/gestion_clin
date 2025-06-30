@@ -44,14 +44,14 @@ export class User {
   dossiers: Dossier[];
 
   @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
-  medecin: Medecin; // ✅ Ajout essentiel
+  medecin: Medecin;  // ✅ Ajout essentiel
   @Column({ nullable: true })
-telephone: string;
+  telephone: string;
 
-@Column({ nullable: true })
-sexe: string;
+  @Column({ nullable: true })
+  sexe: string;
 
-@Column({ nullable: true })
-dateNaissance: string;
+  @Column({ nullable: true })
+  dateNaissance: string;
 
 }
