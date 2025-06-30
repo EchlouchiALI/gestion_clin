@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { MedecinController } from './patient.controller';
+import { PatientController } from './patient.controller';
 
 import { PatientService } from './patient.service';
 import { Patient } from './patient.entity';
@@ -19,7 +19,7 @@ import { Medecin } from '../medecins/medecin.entity';
   imports: [
     TypeOrmModule.forFeature([Patient, User, RendezVous, Medecin]),
   ],
-  controllers: [MedecinController],
+  controllers: [PatientController],
 
   providers: [PatientService, UsersService, RendezvousService, PdfService, MailService],
   exports: [PatientService],

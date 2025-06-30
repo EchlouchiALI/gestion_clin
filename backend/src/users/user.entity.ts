@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
+
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Dossier } from '../dossiers/dossier.entity';
+import { Medecin } from 'src/medecins/medecin.entity';
 
 @Entity()
 export class User {
@@ -40,4 +42,16 @@ export class User {
 
   @OneToMany(() => Dossier, (dossier) => dossier.patient)
   dossiers: Dossier[];
+
+  @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
+  medecin: Medecin; // ✅ Ajout essentiel
+  @Column({ nullable: true })
+telephone: string;
+
+@Column({ nullable: true })
+sexe: string;
+
+@Column({ nullable: true })
+dateNaissance: string;
+
 }

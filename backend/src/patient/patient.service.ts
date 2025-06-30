@@ -1,29 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Patient } from './patient.entity';
 import { Medecin } from '../medecins/medecin.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class PatientService {
   constructor(
-    @InjectRepository(Patient)
-    private readonly patientRepo: Repository<Patient>,
-
     @InjectRepository(Medecin)
     private readonly medecinRepo: Repository<Medecin>,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
-  // 🔎 Obtenir tous les patients avec leur médecin
-  async findAll(): Promise<Patient[]> {
-    return this.patientRepo.find({ relations: ['medecin'] });
+  // ✅ Obtenir tous les patients liés à un médecin
+  async findByMedecinId(medecinId: number): Promise<User[]> {
+    return this.userRepository.find({
+      where: {
+        role: 'patient',
+        medecin: { id: medecinId } as any, // ⚠️ "as any" pour contourner TS si besoin
+      },
+      relations: ['medecin'],
+    });
   }
 
-  // 🔎 Obtenir un patient par ID, avec le médecin associé
-  async findOne(id: number): Promise<Patient> {
-    const patient = await this.patientRepo.findOne({
-      where: { id },
-      relations: ['medecin'], // ⚠️ Nécessaire pour vérifier les droits du médecin
+  // ✅ Obtenir un patient par ID
+  async findOne(id: number): Promise<User> {
+    const patient = await this.userRepository.findOne({
+      where: { id, role: 'patient' },
+      relations: ['medecin'],
     });
 
     if (!patient) {
@@ -33,36 +39,46 @@ export class PatientService {
     return patient;
   }
 
-  // ➕ Créer un nouveau patient associé à un médecin
-  async create(data: Partial<Patient>, medecinId: number): Promise<Patient> {
-    const medecin = await this.medecinRepo.findOneBy({ id: medecinId });
-    if (!medecin) {
+  // ✅ Créer un patient en tant qu'utilisateur lié à un médecin
+  async create(data: Partial<User>, medecinId: number): Promise<User> {
+    const medecin = await this.userRepository.findOneBy({ id: medecinId });
+
+    if (!medecin || medecin.role !== 'medecin') {
       throw new NotFoundException('Médecin introuvable');
     }
 
-    const newPatient = this.patientRepo.create({
+    const newPatient = this.userRepository.create({
       ...data,
+      role: 'patient',
       medecin,
     });
 
-    return this.patientRepo.save(newPatient);
+    console.log('✅ Patient créé :', newPatient);
+
+    return this.userRepository.save(newPatient);
   }
 
-  // ✏️ Modifier un patient existant (après vérification dans le contrôleur)
-  async update(id: number, data: Partial<Patient>): Promise<Patient> {
-    const patient = await this.findOne(id); // 🔁 inclut déjà medecin
+  // ✅ Modifier un patient
+  async update(id: number, data: Partial<User>): Promise<User> {
+    const patient = await this.findOne(id);
     Object.assign(patient, data);
-    return this.patientRepo.save(patient);
+    return this.userRepository.save(patient);
   }
 
-  // 🗑️ Supprimer un patient (vérification faite avant dans le contrôleur)
+  // ✅ Supprimer un patient
   async delete(id: number): Promise<void> {
-    const patient = await this.findOne(id); // 🔁 vérifie existence et relations
-
-    const result = await this.patientRepo.delete(id);
+    const result = await this.userRepository.delete({ id, role: 'patient' });
 
     if (result.affected === 0) {
       throw new NotFoundException('Patient introuvable');
     }
+  }
+
+  // ✅ Pour l’admin : lister tous les patients (sans filtre médecin)
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find({
+      where: { role: 'patient' },
+      relations: ['medecin'],
+    });
   }
 }

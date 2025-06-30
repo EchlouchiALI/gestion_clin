@@ -19,7 +19,10 @@ export class RendezVous {
   @Column({ default: 'à venir' })
   statut: 'à venir' | 'passé' | 'annulé';
 
-  @ManyToOne(() => User, (u) => u.rendezvous, { eager: true })
+  @ManyToOne(() => User, (u) => u.rendezvous, {
+    eager: true,
+    onDelete: 'CASCADE', // ✅ très important pour éviter l'erreur 23503
+  })
   patient: User;
 
   @ManyToOne(() => Medecin, (m) => m.rendezvous, { eager: true })

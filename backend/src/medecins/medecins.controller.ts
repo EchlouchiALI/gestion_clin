@@ -41,9 +41,24 @@ export class MedecinsController {
     return this.rendezvousService.findByMedecinId(req.user.id);
   }
 
+  @Get('patients')
+  async getMyPatients(@Request() req) {
+    return this.patientService.findByMedecinId(req.user.id);
+  }
+
   @Post('patients')
   async createPatient(@Body() dto: CreatePatientDto, @Request() req) {
+    console.log("✅ Données reçues pour création patient :", dto);
     return this.patientService.create(dto, req.user.id);
+  }
+
+  @Get('patients/:id')
+  async getPatient(@Param('id') id: number, @Request() req) {
+    const patient = await this.patientService.findOne(id);
+    if (!patient || patient.medecin.id !== req.user.id) {
+      throw new NotFoundException('Patient introuvable ou non autorisé');
+    }
+    return patient;
   }
 
   @Put('patients/:id')
@@ -92,7 +107,6 @@ export class MedecinsController {
   @Get('patients/:id/pdf')
   async generatePatientPdf(@Param('id') id: number, @Request() req) {
     const patient = await this.patientService.findOne(id);
-
     if (!patient || patient.medecin.id !== req.user.id) {
       throw new NotFoundException('Patient introuvable ou non autorisé');
     }
@@ -105,7 +119,7 @@ export class MedecinsController {
     });
   }
 
-  // Admin
+  // Partie Admin
 
   @Get('admin/medecins')
   findAllMedecins() {

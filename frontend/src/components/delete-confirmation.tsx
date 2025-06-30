@@ -1,57 +1,19 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle } from "lucide-react"
-import type { Patient } from "@/types/patient" // ✅ correction de l'import
-
-interface DeleteConfirmationProps {
-  patient: Patient
+type DeleteConfirmationProps = {
+  title: string
+  message: string
   onConfirm: () => Promise<void>
   onCancel: () => void
-  isLoading?: boolean
 }
 
-export function DeleteConfirmation({
-  patient,
-  onConfirm,
-  onCancel,
-  isLoading,
-}: DeleteConfirmationProps) {
+export default function DeleteConfirmation({ title, message, onConfirm, onCancel }: DeleteConfirmationProps) {
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-red-600">
-          <AlertTriangle className="h-5 w-5" />
-          Confirmer la suppression
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-4">
-          Êtes-vous sûr de vouloir supprimer le patient{" "}
-          <strong>
-            {patient.prenom} {patient.nom}
-          </strong>{" "}
-          ?
-        </p>
-        <p className="text-sm text-muted-foreground mb-6">
-          Cette action est irréversible et supprimera toutes les données associées.
-        </p>
-        <div className="flex gap-2">
-          {/* 🔧 suppression de variant="destructive" si non supporté */}
-          <Button
-            variant="ghost"
-            className="bg-red-600 hover:bg-red-700 text-white flex-1"
-            onClick={onConfirm}
-            disabled={isLoading}
-          >
-            {isLoading ? "Suppression..." : "Supprimer"}
-          </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1">
-            Annuler
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="p-4 bg-white shadow rounded">
+      <h2 className="font-bold text-lg">{title}</h2>
+      <p className="text-sm text-gray-600">{message}</p>
+      <div className="flex gap-4 mt-4">
+        <button onClick={onConfirm} className="bg-red-500 text-white px-4 py-2 rounded">Confirmer</button>
+        <button onClick={onCancel} className="text-gray-600">Annuler</button>
+      </div>
+    </div>
   )
 }

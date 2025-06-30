@@ -1,19 +1,24 @@
-// src/patient/dto/create-patient.dto.ts
 import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreatePatientDto {
-  @IsNotEmpty({ message: 'Le nom est requis.' })
+  @IsNotEmpty()
   nom: string;
 
-  @IsNotEmpty({ message: 'Le prénom est requis.' })
+  @IsNotEmpty()
   prenom: string;
 
-  @IsEmail({}, { message: 'Email invalide.' })
+  @IsEmail()
   email: string;
 
   @IsOptional()
   telephone?: string;
 
   @IsOptional()
+  sexe?: string; // ✅ Une seule fois
+
+  @IsOptional()
   dateNaissance?: string;
+
+  @IsOptional()
+  password?: string; // ← utile plus tard si tu veux générer un mot de passe
 }
