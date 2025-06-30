@@ -153,9 +153,80 @@ export class PdfService {
       });
     });
   }
+
+  // ✅ PDF de Dossier Patient stylé
   async generatePatientPDF(patient: any): Promise<Buffer> {
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
+
+    const stream = new Writable({
+      write(chunk, _enc, next) {
+        chunks.push(chunk);
+        next();
+      },
+    });
+
+    doc.pipe(stream);
+
+    // En-tête
+    doc
+      .fontSize(26)
+      .fillColor('#004080')
+      .font('Helvetica-Bold')
+      .text('CLINIQUE ATLAS', { align: 'center' })
+      .moveDown();
+
+    doc
+      .fontSize(18)
+      .fillColor('black')
+      .font('Helvetica')
+      .text('Dossier Patient', { align: 'center' })
+      .moveDown(1.5);
+
+    // Infos patient
+    doc
+      .roundedRect(40, doc.y, 520, 200, 8)
+      .stroke('#cccccc')
+      .moveDown();
+
+    doc
+      .fontSize(12)
+      .font('Helvetica')
+      .fillColor('black')
+      .text(`ID : ${patient.id}`, 60, doc.y + 10)
+      .text(`Nom : ${patient.nom}`)
+      .text(`Prénom : ${patient.prenom}`)
+      .text(`Email : ${patient.email}`)
+      .text(`Téléphone : ${patient.telephone}`)
+      .text(`Sexe : ${patient.sexe}`)
+      .text(`Date de naissance : ${patient.dateNaissance}`)
+      .moveDown();
+
+    // Pied
+    doc
+      .moveDown(2)
+      .fontSize(10)
+      .fillColor('gray')
+      .text(`Document généré le : ${new Date().toLocaleDateString()}`, { align: 'right' });
+
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      stream.on('finish', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+  }
+  async generateManualOrdonnancePDF(data: {
+    nom: string;
+    age: string;
+    poids: string;
+    medicaments: string;
+    recommandations: string;
+  }): Promise<Buffer> {
+    const doc = new PDFDocument({ margin: 50 });
+    const chunks: Buffer[] = [];
+  
     const stream = new Writable({
       write(chunk, _enc, next) {
         chunks.push(chunk);
@@ -165,19 +236,37 @@ export class PdfService {
   
     doc.pipe(stream);
   
-    doc.fontSize(20).text('Dossier Patient', { align: 'center' }).moveDown();
+    // 📌 Entête Clinique
+    doc.fontSize(18).text('Dr. Médecin', { align: 'left' });
+    doc.fontSize(12).text('Médecine Générale', { align: 'left' });
+    doc.text('Polyclinique Atlas');
+    doc.text('1, rue Principale');
+    doc.text('Tél : 05 24 00 00 00');
+    doc.moveDown();
   
-    doc.fontSize(12).text(`ID : ${patient.id}`);
-    doc.text(`Nom : ${patient.nom}`);
-    doc.text(`Prénom : ${patient.prenom}`);
-    doc.text(`Email : ${patient.email}`);
-    doc.text(`Téléphone : ${patient.telephone}`);
-    doc.text(`Sexe : ${patient.sexe}`);
-    doc.text(`Date de naissance : ${patient.dateNaissance}`);
+    // 📌 Date
+    doc.text(`Fait à Casablanca, le ${new Date().toLocaleDateString()}`);
+    doc.moveDown();
+  
+    // 📌 Patient
+    doc.fontSize(12).text(`${data.nom}`);
+    doc.text(`${data.age} ans, ${data.poids} kg`);
+    doc.moveDown();
+  
+    // 📌 Médicaments
+    doc.fontSize(13).text(data.medicaments);
+    doc.moveDown();
+  
+    // 📌 Recommandations
+    doc.fontSize(12).text(data.recommandations);
+    doc.moveDown(3);
+  
+    // 📌 Signature
+    doc.text('Signature : _____________________', { align: 'right' });
   
     doc.end();
   
-    return new Promise<Buffer>((resolve) => {
+    return new Promise((resolve) => {
       stream.on('finish', () => {
         resolve(Buffer.concat(chunks));
       });

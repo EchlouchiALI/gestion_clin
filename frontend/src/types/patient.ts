@@ -1,3 +1,5 @@
+// types/patient.ts
+
 export type Patient = {
   id: number
   nom: string
@@ -6,6 +8,7 @@ export type Patient = {
   telephone: string
   sexe: string
   dateNaissance: string
+  lieuNaissance: string
   medecin?: {
     id: number
     nom: string
@@ -15,6 +18,7 @@ export type Patient = {
   rendezvous?: any[]
 }
 
+// ✅ Utilisé lors de la création d’un patient
 export type CreatePatientData = {
   nom: string
   prenom: string
@@ -22,8 +26,23 @@ export type CreatePatientData = {
   telephone: string
   sexe: string
   dateNaissance: string
+  lieuNaissance: string
+  password: string
 }
 
-export type UpdatePatientData = CreatePatientData & {
+// ✅ Utilisé lors de la mise à jour (le mot de passe n'est pas modifié)
+export type UpdatePatientData = Omit<CreatePatientData, 'password'> & {
   id: number
+}
+
+// ✅ Utilisé dans le formulaire de création ou modification
+export type PatientFormData = {
+  nom: string
+  prenom: string
+  email: string
+  telephone: string
+  sexe: string
+  dateNaissance: string
+  lieuNaissance: string
+  password?: string // requis uniquement pour création
 }

@@ -14,18 +14,16 @@ export class PatientService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // ✅ Obtenir tous les patients liés à un médecin
   async findByMedecinId(medecinId: number): Promise<User[]> {
     return this.userRepository.find({
       where: {
         role: 'patient',
-        medecin: { id: medecinId } as any, // ⚠️ "as any" pour contourner TS si besoin
+        medecin: { id: medecinId } as any,
       },
       relations: ['medecin'],
     });
   }
 
-  // ✅ Obtenir un patient par ID
   async findOne(id: number): Promise<User> {
     const patient = await this.userRepository.findOne({
       where: { id, role: 'patient' },
@@ -39,33 +37,31 @@ export class PatientService {
     return patient;
   }
 
-  // ✅ Créer un patient en tant qu'utilisateur lié à un médecin
   async create(data: Partial<User>, medecinId: number): Promise<User> {
-    const medecin = await this.userRepository.findOneBy({ id: medecinId });
+    const medecin = await this.medecinRepo.findOne({ where: { id: medecinId } });
 
-    if (!medecin || medecin.role !== 'medecin') {
+    if (!medecin) {
       throw new NotFoundException('Médecin introuvable');
     }
 
+    const age = calculateAge(data.dateNaissance as string);
+
     const newPatient = this.userRepository.create({
       ...data,
+      age,
       role: 'patient',
       medecin,
     });
 
-    console.log('✅ Patient créé :', newPatient);
-
     return this.userRepository.save(newPatient);
   }
 
-  // ✅ Modifier un patient
   async update(id: number, data: Partial<User>): Promise<User> {
     const patient = await this.findOne(id);
     Object.assign(patient, data);
     return this.userRepository.save(patient);
   }
 
-  // ✅ Supprimer un patient
   async delete(id: number): Promise<void> {
     const result = await this.userRepository.delete({ id, role: 'patient' });
 
@@ -74,11 +70,24 @@ export class PatientService {
     }
   }
 
-  // ✅ Pour l’admin : lister tous les patients (sans filtre médecin)
   async findAll(): Promise<User[]> {
     return this.userRepository.find({
       where: { role: 'patient' },
       relations: ['medecin'],
     });
   }
+}
+
+// ✅ Définie en dehors de la classe
+function calculateAge(dateNaissance: string): number {
+  const birthDate = new Date(dateNaissance);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return age;
 }

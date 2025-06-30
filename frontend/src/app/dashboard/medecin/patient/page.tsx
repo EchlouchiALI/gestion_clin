@@ -5,8 +5,8 @@ import { User, Mail, Trash2, FileText, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import PatientForm from '@/components/patient-form' // ✅ SANS les accolades
-import DeleteConfirmation from '@/components/delete-confirmation' // ✅ SANS les accolades
+import PatientForm from '@/components/patient-form'
+import DeleteConfirmation from '@/components/delete-confirmation'
 import { MessageForm } from '@/components/message-form'
 import type { Patient } from '@/types/patient'
 
@@ -50,33 +50,38 @@ export default function PageGestionPatients() {
 
   const handlePatientSubmit = async (data: any) => {
     const token = localStorage.getItem('token')
-    const url = selectedPatient
+    const isEdit = !!selectedPatient
+
+    const payload = isEdit
+      ? { ...data }
+      : { ...data, password: data.password || '123456' }
+
+    if (isEdit) delete payload.password
+
+    const url = isEdit
       ? `http://localhost:3001/medecin/patients/${selectedPatient.id}`
       : `http://localhost:3001/medecin/patients`
-  
-    const method = selectedPatient ? 'PATCH' : 'POST'
-  
-    console.log('📤 Données envoyées :', data)
-  
+
+    const method = isEdit ? 'PUT' : 'POST'
+
     const res = await fetch(url, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
-  
+
     if (!res.ok) {
       const errorText = await res.text()
       console.error('❌ Erreur backend :', errorText)
       return
     }
-  
+
     setShowForm(false)
     fetchPatients()
   }
-  
 
   const handleSendMessage = async (data: { subject: string; message: string }) => {
     const token = localStorage.getItem('token')
@@ -92,6 +97,29 @@ export default function PageGestionPatients() {
     })
 
     setShowMessageForm(false)
+  }
+
+  const handleGeneratePDF = async (patientId: number) => {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`http://localhost:3001/medecin/patients/${patientId}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('❌ Erreur génération PDF :', errorText)
+      return
+    }
+
+    const blob = await res.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `patient-${patientId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
   }
 
   if (loading) {
@@ -158,9 +186,7 @@ export default function PageGestionPatients() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    // generatePatientPDF(patient)
-                  }}
+                  onClick={() => handleGeneratePDF(patient.id)}
                 >
                   <FileText className="w-4 h-4 mr-1" /> PDF
                 </Button>

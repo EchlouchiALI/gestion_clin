@@ -121,4 +121,21 @@ export class OrdonnancesService {
       prescription: ordonnance.contenu,
     });
   }
+  async findByIdWithDetails(id: number) {
+    return this.ordonnanceRepository.findOne({
+      where: { id },
+      relations: ['medecin', 'patient'],
+    });
+  }
+  async generateCustomPdf(data: {
+    nom: string;
+    age: string;
+    poids: string;
+    medicaments: string;
+    recommandations: string;
+  }): Promise<Buffer> {
+    return this.pdfService.generateManualOrdonnancePDF(data);
+  }
+  
+  
 }
