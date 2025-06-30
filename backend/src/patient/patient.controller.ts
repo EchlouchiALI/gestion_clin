@@ -14,7 +14,7 @@ import { PatientService } from 'src/patient/patient.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('medecin')
 @Controller('medecin')
-export class MedecinController {
+export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   // ✅ Supprimer un patient appartenant au médecin connecté

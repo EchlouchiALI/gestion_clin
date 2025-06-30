@@ -46,6 +46,20 @@ export class MedecinsController {
     return this.patientService.create(dto, req.user.id);
   }
 
+  @Get('patients')
+  async getPatients(@Request() req) {
+    return this.medecinsService.findPatientsByMedecin(req.user.id);
+  }
+
+  @Get('patients/:id')
+  async getPatient(@Param('id') id: number, @Request() req) {
+    const patient = await this.patientService.findOne(id);
+    if (!patient || patient.medecin.id !== req.user.id) {
+      throw new NotFoundException('Patient introuvable ou non autorisé');
+    }
+    return patient;
+  }
+
   @Put('patients/:id')
   async updatePatient(
     @Param('id') id: number,
