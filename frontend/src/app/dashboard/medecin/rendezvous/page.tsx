@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react"
 import { Calendar, Clock, User, Search, Phone, Mail, CheckCircle, XCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface Patient {
@@ -28,13 +23,12 @@ interface RendezVous {
   notes?: string
 }
 
-export default function MedecinRendezVousPage() {
+export default function CleanRendezVousPage() {
   const [rendezvous, setRendezvous] = useState<RendezVous[]>([])
   const [filteredRendezvous, setFilteredRendezvous] = useState<RendezVous[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("tous")
-  const [dateFilter, setDateFilter] = useState("tous")
 
   const fetchRdv = async () => {
     try {
@@ -73,69 +67,41 @@ export default function MedecinRendezVousPage() {
 
     // Filtrage par statut
     if (statusFilter !== "tous") {
-      filtered = filtered.filter((rdv) => rdv.statut === statusFilter)
-    }
-
-    // Filtrage par date
-    if (dateFilter !== "tous") {
-      const today = new Date()
-      const rdvDate = new Date(filtered[0]?.date || today)
-
-      switch (dateFilter) {
-        case "aujourd'hui":
-          filtered = filtered.filter((rdv) => {
-            const date = new Date(rdv.date)
-            return date.toDateString() === today.toDateString()
-          })
-          break
-        case "cette-semaine":
-          const weekStart = new Date(today.setDate(today.getDate() - today.getDay()))
-          const weekEnd = new Date(today.setDate(today.getDate() - today.getDay() + 6))
-          filtered = filtered.filter((rdv) => {
-            const date = new Date(rdv.date)
-            return date >= weekStart && date <= weekEnd
-          })
-          break
-        case "ce-mois":
-          filtered = filtered.filter((rdv) => {
-            const date = new Date(rdv.date)
-            return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear()
-          })
-          break
-      }
+      filtered = filtered.filter((rdv) => rdv.statut.toLowerCase().includes(statusFilter.toLowerCase()))
     }
 
     setFilteredRendezvous(filtered)
-  }, [searchTerm, statusFilter, dateFilter, rendezvous])
+  }, [searchTerm, statusFilter, rendezvous])
 
-  const getStatusBadge = (statut: string) => {
+  const getStatusColor = (statut: string) => {
     switch (statut.toLowerCase()) {
       case "confirmé":
       case "confirme":
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Confirmé
-          </Badge>
-        )
+        return "bg-green-100 text-green-800"
       case "en attente":
       case "attente":
-        return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
-            <AlertCircle className="w-3 h-3 mr-1" />
-            En attente
-          </Badge>
-        )
+        return "bg-yellow-100 text-yellow-800"
       case "annulé":
       case "annule":
-        return (
-          <Badge variant="destructive" className="bg-red-100 text-red-800 hover:bg-red-200">
-            <XCircle className="w-3 h-3 mr-1" />
-            Annulé
-          </Badge>
-        )
+        return "bg-red-100 text-red-800"
       default:
-        return <Badge variant="outline">{statut}</Badge>
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getStatusIcon = (statut: string) => {
+    switch (statut.toLowerCase()) {
+      case "confirmé":
+      case "confirme":
+        return <CheckCircle className="w-4 h-4" />
+      case "en attente":
+      case "attente":
+        return <AlertCircle className="w-4 h-4" />
+      case "annulé":
+      case "annule":
+        return <XCircle className="w-4 h-4" />
+      default:
+        return <Clock className="w-4 h-4" />
     }
   }
 
@@ -143,9 +109,9 @@ export default function MedecinRendezVousPage() {
     const date = new Date(dateString)
     return date.toLocaleDateString("fr-FR", {
       weekday: "long",
-      year: "numeric",
-      month: "long",
       day: "numeric",
+      month: "long",
+      year: "numeric",
     })
   }
 
@@ -155,251 +121,235 @@ export default function MedecinRendezVousPage() {
     return date.toDateString() === today.toDateString()
   }
 
-  const isUpcoming = (dateString: string, heure: string) => {
-    const now = new Date()
-    const rdvDateTime = new Date(`${dateString}T${heure}`)
-    return rdvDateTime > now
-  }
-
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <Skeleton className="h-10 w-64 mb-4" />
-          <Skeleton className="h-6 w-96" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <Skeleton className="h-12 w-64 mb-6" />
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* En-tête */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Mes Rendez-vous</h1>
-        <p className="text-gray-600">Gérez vos consultations et suivez vos patients</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header avec bouton retour */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:bg-gray-50"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Retour</span>
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">Mes Rendez-vous</h1>
+          </div>
+        </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold">{rendezvous.length}</p>
+                <p className="text-sm text-gray-600">Total</p>
+                <p className="text-2xl font-bold text-gray-900">{rendezvous.length}</p>
               </div>
               <Calendar className="h-8 w-8 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Aujourd'hui</p>
-                <p className="text-2xl font-bold">{rendezvous.filter((rdv) => isToday(rdv.date)).length}</p>
+                <p className="text-sm text-gray-600">Aujourd'hui</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {rendezvous.filter((rdv) => isToday(rdv.date)).length}
+                </p>
               </div>
               <Clock className="h-8 w-8 text-green-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Confirmés</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-gray-600">Confirmés</p>
+                <p className="text-2xl font-bold text-gray-900">
                   {rendezvous.filter((rdv) => rdv.statut.toLowerCase().includes("confirm")).length}
                 </p>
               </div>
               <CheckCircle className="h-8 w-8 text-emerald-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">En attente</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-gray-600">En attente</p>
+                <p className="text-2xl font-bold text-gray-900">
                   {rendezvous.filter((rdv) => rdv.statut.toLowerCase().includes("attente")).length}
                 </p>
               </div>
               <AlertCircle className="h-8 w-8 text-yellow-600" />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtres et recherche */}
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Rechercher un patient ou un motif..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filtrer par statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Tous les statuts</SelectItem>
-                <SelectItem value="confirmé">Confirmé</SelectItem>
-                <SelectItem value="en attente">En attente</SelectItem>
-                <SelectItem value="annulé">Annulé</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filtrer par date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Toutes les dates</SelectItem>
-                <SelectItem value="aujourd'hui">Aujourd'hui</SelectItem>
-                <SelectItem value="cette-semaine">Cette semaine</SelectItem>
-                <SelectItem value="ce-mois">Ce mois</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Liste des rendez-vous */}
-      {filteredRendezvous.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchTerm || statusFilter !== "tous" || dateFilter !== "tous"
-                ? "Aucun rendez-vous trouvé"
-                : "Aucun rendez-vous pour le moment"}
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm || statusFilter !== "tous" || dateFilter !== "tous"
-                ? "Essayez de modifier vos filtres de recherche"
-                : "Vos prochains rendez-vous apparaîtront ici"}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredRendezvous.map((rdv) => (
-            <Card
-              key={rdv.id}
-              className={`hover:shadow-lg transition-shadow ${
-                isToday(rdv.date) ? "ring-2 ring-blue-200 bg-blue-50/30" : ""
-              }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 p-2 rounded-full">
-                      <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {rdv.patient.prenom} {rdv.patient.nom}
-                      </CardTitle>
-                      {isToday(rdv.date) && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          Aujourd'hui
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  {getStatusBadge(rdv.statut)}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">{formatDate(rdv.date)}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>{rdv.heure}</span>
-                    {isUpcoming(rdv.date, rdv.heure) && (
-                      <Badge variant="outline" className="text-xs ml-auto">
-                        À venir
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200"></div>
-
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">Motif de consultation</p>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">{rdv.motif}</p>
-                </div>
-
-                {rdv.notes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Notes</p>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">{rdv.notes}</p>
-                  </div>
-                )}
-
-                {(rdv.patient.telephone || rdv.patient.email) && (
-                  <>
-                    <div className="border-t border-gray-200"></div>
-                    <div className="space-y-2">
-                      {rdv.patient.telephone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4" />
-                          <span>{rdv.patient.telephone}</span>
-                        </div>
-                      )}
-                      {rdv.patient.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-4 w-4" />
-                          <span>{rdv.patient.email}</span>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" className="flex-1 bg-transparent">
-                    Voir détails
-                  </Button>
-                  {rdv.statut.toLowerCase() === "en attente" && (
-                    <Button size="sm" className="flex-1">
-                      Confirmer
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
-      )}
+
+        {/* Filtres */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher un patient ou un motif..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStatusFilter("tous")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  statusFilter === "tous" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Tous
+              </button>
+              <button
+                onClick={() => setStatusFilter("confirmé")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  statusFilter === "confirmé"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Confirmés
+              </button>
+              <button
+                onClick={() => setStatusFilter("attente")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  statusFilter === "attente"
+                    ? "bg-yellow-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                En attente
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Liste des rendez-vous */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Rendez-vous ({filteredRendezvous.length})</h2>
+          </div>
+
+          {filteredRendezvous.length === 0 ? (
+            <div className="p-12 text-center">
+              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun rendez-vous trouvé</h3>
+              <p className="text-gray-500">Essayez de modifier vos filtres de recherche</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredRendezvous.map((rdv) => (
+                <div
+                  key={rdv.id}
+                  className={`p-6 hover:bg-gray-50 transition-colors ${
+                    isToday(rdv.date) ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    {/* Informations patient */}
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {rdv.patient.prenom} {rdv.patient.nom}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>{formatDate(rdv.date)}</span>
+                            {isToday(rdv.date) && (
+                              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                Aujourd'hui
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-4 h-4" />
+                            <span>{rdv.heure}</span>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">
+                            <strong>Motif:</strong> {rdv.motif}
+                          </p>
+                          {rdv.notes && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              <strong>Notes:</strong> {rdv.notes}
+                            </p>
+                          )}
+                        </div>
+                        {(rdv.patient.telephone || rdv.patient.email) && (
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                            {rdv.patient.telephone && (
+                              <div className="flex items-center space-x-1">
+                                <Phone className="w-4 h-4" />
+                                <span>{rdv.patient.telephone}</span>
+                              </div>
+                            )}
+                            {rdv.patient.email && (
+                              <div className="flex items-center space-x-1">
+                                <Mail className="w-4 h-4" />
+                                <span>{rdv.patient.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Statut et actions */}
+                    <div className="flex flex-col items-end space-y-3">
+                      <div
+                        className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(rdv.statut)}`}
+                      >
+                        {getStatusIcon(rdv.statut)}
+                        <span>{rdv.statut}</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                          Voir détails
+                        </button>
+                        {rdv.statut.toLowerCase().includes("attente") && (
+                          <button className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Confirmer
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
