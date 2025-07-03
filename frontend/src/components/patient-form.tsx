@@ -22,6 +22,7 @@ export default function PatientForm({ patient, onSubmit, onClose }: PatientFormP
     email: patient?.email || "",
     telephone: patient?.telephone || "",
     sexe: patient?.sexe || "",
+    lieuNaissance: patient?.lieuNaissance || "",
     dateNaissance: patient?.dateNaissance || "",
     password: "",
   })
@@ -75,6 +76,16 @@ export default function PatientForm({ patient, onSubmit, onClose }: PatientFormP
                 id="telephone"
                 value={formData.telephone}
                 onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="lieuNaissance">Lieu de naissance</Label>
+              <Input
+                id="lieuNaissance"
+                value={formData.lieuNaissance}
+                onChange={(e) =>
+                  setFormData({ ...formData, lieuNaissance: e.target.value })
+                }
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

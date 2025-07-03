@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Medecin } from '../medecins/medecin.entity';
-import { Patient } from '../patient/patient.entity';
+import { User } from '../users/user.entity';
 
 @Entity()
 export class Ordonnance {
@@ -13,9 +13,9 @@ export class Ordonnance {
   @Column({ type: 'text' })
   contenu: string;
 
-  @ManyToOne(() => Medecin, medecin => medecin.ordonnances)
+  @ManyToOne(() => Medecin, medecin => medecin.ordonnances, { eager: true })
   medecin: Medecin;
 
-  @ManyToOne(() => Patient, patient => patient.ordonnances)
-  patient: Patient;
+  @ManyToOne(() => User, { eager: true })
+  patient: User;
 }

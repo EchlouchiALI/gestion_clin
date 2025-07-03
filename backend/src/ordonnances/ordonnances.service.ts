@@ -6,6 +6,7 @@ import { PdfService } from '../pdf/pdf.service';
 import { User } from '../users/user.entity';
 import { Medecin } from '../medecins/medecin.entity';
 import { MailService } from '../mail/mail.service';
+import { CreateOrdonnanceDto } from './dto/create-ordonnance.dto';
 
 @Injectable()
 export class OrdonnancesService {
@@ -23,12 +24,7 @@ export class OrdonnancesService {
     private readonly mailService: MailService,
   ) {}
 
-  findAll(): Promise<Ordonnance[]> {
-    return this.ordonnanceRepository.find({
-      relations: ['patient', 'medecin'],
-      order: { date: 'DESC' },
-    });
-  }
+  
 
   async findOne(id: number): Promise<Ordonnance> {
     const ordonnance = await this.ordonnanceRepository.findOne({
@@ -43,16 +39,16 @@ export class OrdonnancesService {
     return ordonnance;
   }
 
-  async create(data: Partial<Ordonnance>): Promise<Ordonnance> {
-    const patient = await this.userRepo.findOne({ where: { id: data.patient?.id } });
-    const medecin = await this.medecinRepo.findOne({ where: { id: data.medecin?.id } });
+  async createWithPdfAndMail(medecinId: number, dto: CreateOrdonnanceDto): Promise<Ordonnance> {
+    const patient = await this.userRepo.findOne({ where: { id: dto.patientId } });
+    const medecin = await this.medecinRepo.findOne({ where: { id: medecinId } });
 
     if (!patient || !medecin) {
       throw new NotFoundException('Patient ou médecin introuvable');
     }
 
     const ordonnance = this.ordonnanceRepository.create({
-      ...data,
+      contenu: dto.contenu,
       patient,
       medecin,
       date: new Date().toISOString().slice(0, 10),
@@ -121,12 +117,14 @@ export class OrdonnancesService {
       prescription: ordonnance.contenu,
     });
   }
+
   async findByIdWithDetails(id: number) {
     return this.ordonnanceRepository.findOne({
       where: { id },
       relations: ['medecin', 'patient'],
     });
   }
+
   async generateCustomPdf(data: {
     nom: string;
     age: string;
@@ -136,6 +134,12 @@ export class OrdonnancesService {
   }): Promise<Buffer> {
     return this.pdfService.generateManualOrdonnancePDF(data);
   }
-  
+  async findByMedecin(medecinId: number): Promise<Ordonnance[]> {
+    return this.ordonnanceRepository.find({
+      where: { medecin: { id: medecinId } },
+      relations: ['patient', 'medecin'],
+      order: { date: 'DESC' },
+    })
+  }
   
 }
