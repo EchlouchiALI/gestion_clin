@@ -48,31 +48,60 @@ export default function DashboardMedecinPage() {
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) return router.push("/login")
-
-    // Charger le profil médecin
-    fetch("http://localhost:3001/medecin/me/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("✅ Profil reçu depuis l'API :", data)
-        setMedecin(data)
-
-        // Simuler des statistiques (remplacez par vos vraies données)
+  
+    const headers = { Authorization: `Bearer ${token}` }
+  
+    const loadData = async () => {
+      try {
+        const [profileRes, patientsRes, rdvRes, ordRes] = await Promise.all([
+          fetch("http://localhost:3001/medecin/me/profile", { headers }),
+          fetch("http://localhost:3001/medecin/patients", { headers }),
+          fetch("http://localhost:3001/medecin/me/rendezvous", { headers }),
+          fetch("http://localhost:3001/medecin/ordonnances", { headers }),
+        ])
+  
+        if (!profileRes.ok) throw new Error("Profil invalide")
+  
+        const profile = await profileRes.json()
+        const patients = patientsRes.ok ? await patientsRes.json() : []
+        const rdv = rdvRes.ok ? await rdvRes.json() : []
+        const ordonnances = ordRes.ok ? await ordRes.json() : []
+  
+        setMedecin(profile)
+  
+        const today = new Date()
+        const startOfWeek = new Date(today)
+        startOfWeek.setHours(0, 0, 0, 0)
+        startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+        const endOfWeek = new Date(startOfWeek)
+        endOfWeek.setDate(startOfWeek.getDate() + 6)
+  
+        const rdvAuj = rdv.filter(
+          (r: any) => new Date(r.date).toDateString() === today.toDateString()
+        ).length
+  
+        const rdvWeek = rdv.filter((r: any) => {
+          const d = new Date(r.date)
+          return d >= startOfWeek && d <= endOfWeek
+        }).length
+  
         setStats({
-          patients: 127,
-          rdvAujourdhui: 8,
-          ordonnances: 45,
-          rdvSemaine: 32,
+          patients: patients.length,
+          rdvAujourdhui: rdvAuj,
+          ordonnances: ordonnances.length,
+          rdvSemaine: rdvWeek,
         })
-
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error("❌ Erreur API profile :", err)
+      } catch (err) {
+        console.error("❌ Erreur chargement dashboard :", err)
         router.push("/login")
-      })
+      } finally {
+        setLoading(false)
+      }
+    }
+  
+    loadData()
   }, [router])
+  
 
   const handleLogout = () => {
     localStorage.removeItem("token")
