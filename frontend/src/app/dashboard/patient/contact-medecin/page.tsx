@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { API_URL } from '@/lib/config'
 
 type Message = {
   id: number
@@ -18,17 +19,33 @@ type Message = {
 }
 
 export default function Page() {
-  const [medecinId, setMedecinId] = useState<number>(2) // ID fixe ou à rendre dynamique
+    const [medecinId, setMedecinId] = useState<number | null>(null)// ID fixe ou à rendre dynamique
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const fetchMedecin = async () => {
+    if (!token) return
+    try {
+      const res = await fetch(`${API_URL}/patient/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setMedecinId(data.medecin?.id ?? null)
+      }
+    } catch (err) {
+      console.error('Erreur chargement medecin', err)
+    }
+  }
 
   const fetchMessages = async () => {
+
     try {
       setLoading(true)
-      const res = await fetch(`http://localhost:3001/patient/messages/${medecinId}`, {
+      if (!medecinId) return
+      const res = await fetch(`${API_URL}/patient/messages/${medecinId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
@@ -44,7 +61,7 @@ export default function Page() {
     if (!newMessage.trim()) return
 
     try {
-      const res = await fetch('http://localhost:3001/patient/messages', {
+        const res = await fetch(`${API_URL}/patient/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +83,11 @@ export default function Page() {
   }
 
   useEffect(() => {
-    fetchMessages()
+    fetchMedecin()
+  }, [])
+
+  useEffect(() => {
+    if (medecinId) fetchMessages()
   }, [medecinId])
 
   return (

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { API_URL } from "@/lib/config"
 import { MessageCircle, FileText, Calendar, User, Stethoscope, Clock, Bell, LogOut, Heart } from "lucide-react"
 
 type Patient = {
@@ -26,7 +27,7 @@ export default function PatientDashboardPage() {
         const token = localStorage.getItem("token")
         if (!token) throw new Error("Token manquant")
 
-        const res = await fetch("http://localhost:3001/patient/me", {
+        const res = await fetch(`${API_URL}/patient/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

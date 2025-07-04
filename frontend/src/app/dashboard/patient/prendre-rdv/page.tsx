@@ -1,170 +1,87 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 
-export default function Page() {
-  const [step, setStep] = useState(1)
-  const [answers, setAnswers] = useState<{ [key: string]: boolean }>({})
-  const [specialite, setSpecialite] = useState('')
-  const [medecins, setMedecins] = useState<any[]>([])
-  const [selectedMedecinId, setSelectedMedecinId] = useState<number | null>(null)
-  const [date, setDate] = useState('')
-  const [heure, setHeure] = useState('')
-  const [motif, setMotif] = useState('')
-  const [message, setMessage] = useState('')
+const questions = [
+  { id: 1, text: "Avez-vous des douleurs thoraciques ?", field: "q1" },
+  { id: 2, text: "Avez-vous une éruption cutanée ?", field: "q2" },
+  { id: 3, text: "Souffrez-vous de maux de tête fréquents ?", field: "q3" },
+  { id: 4, text: "Avez-vous des troubles respiratoires ?", field: "q4" },
+  { id: 5, text: "Souffrez-vous de douleurs articulaires ?", field: "q5" },
+]
 
-  const questions = [
-    { id: 'q1', text: 'Ressentez-vous des douleurs thoraciques ?' },
-    { id: 'q2', text: 'Avez-vous des maux de tête fréquents ?' },
-    { id: 'q3', text: 'Souffrez-vous de troubles digestifs ?' },
-    { id: 'q4', text: 'Avez-vous des troubles du sommeil ?' },
-    { id: 'q5', text: 'Souhaitez-vous un bilan de santé général ?' },
-  ]
+export default function PrendreRDVPage() {
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [specialite, setSpecialite] = useState<string | null>(null)
 
-  const handleAnswer = (id: string, value: boolean) => {
-    setAnswers({ ...answers, [id]: value })
+  const handleAnswer = (field: string, value: string) => {
+    setAnswers(prev => ({ ...prev, [field]: value }))
   }
 
-  const analyserReponses = () => {
-    const score = {
-      Cardiologue: answers.q1 ? 1 : 0,
-      Neurologue: answers.q2 ? 1 : 0,
-      'Gastro-entérologue': answers.q3 ? 1 : 0,
-      Psychiatre: answers.q4 ? 1 : 0,
-      'Médecin généraliste': answers.q5 ? 1 : 0,
-    }
-
-    // Trouver la spécialité avec le score le plus élevé
-    const specialiteMax = Object.entries(score).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
-    setSpecialite(specialiteMax)
-    setStep(2)
-  }
-
-  useEffect(() => {
-    const fetchMedecins = async () => {
-      if (!specialite) return
-      try {
-        const res = await fetch(`http://localhost:3001/medecins?specialite=${specialite}`)
-        const data = await res.json()
-        if (Array.isArray(data)) {
-          setMedecins(data)
-        } else {
-          console.error('Réponse inattendue :', data)
-          setMedecins([])
-        }
-      } catch (error) {
-        console.error('Erreur chargement médecins :', error)
-        setMedecins([])
-      }
-    }
-  
-    fetchMedecins()
-  }, [specialite])
-  
-
-  const handleRdvSubmit = async () => {
-    if (!selectedMedecinId || !date || !heure || !motif) {
-      alert('Veuillez remplir tous les champs.')
-      return
-    }
-
-    try {
-      const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:3001/patient/rendezvous', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          date,
-          heure,
-          motif,
-          medecinId: selectedMedecinId,
-        }),
-      })
-
-      if (res.ok) {
-        setMessage('✅ Rendez-vous réservé avec succès !')
-        setStep(1)
-        setAnswers({})
-        setSpecialite('')
-        setSelectedMedecinId(null)
-        setDate('')
-        setHeure('')
-        setMotif('')
-      } else {
-        const err = await res.json()
-        setMessage(`❌ Erreur : ${err.message || 'Échec'}`)
-      }
-    } catch (error) {
-      console.error('Erreur envoi RDV :', error)
-      setMessage("Erreur lors de l'envoi du RDV.")
-    }
+  const handleSubmit = () => {
+    // 🔁 Logique simple de spécialité basée sur les réponses
+    if (answers.q1 === "oui") setSpecialite("Cardiologue")
+    else if (answers.q2 === "oui") setSpecialite("Dermatologue")
+    else if (answers.q3 === "oui") setSpecialite("Neurologue")
+    else if (answers.q4 === "oui") setSpecialite("Pneumologue")
+    else if (answers.q5 === "oui") setSpecialite("Rhumatologue")
+    else setSpecialite("Médecin généraliste")
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🧠 Prise de rendez-vous intelligente</h1>
+    <main className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-center">Prise de rendez-vous - Questionnaire</h1>
 
-      {step === 1 && (
-        <div className="space-y-6">
-          {questions.map((q) => (
-            <div key={q.id} className="border p-4 rounded">
-              <p className="mb-2 font-medium">{q.text}</p>
-              <div className="flex gap-4">
-                <Button
-                  variant={answers[q.id] === true ? 'default' : 'outline'}
-                  onClick={() => handleAnswer(q.id, true)}
-                >
-                  Oui
-                </Button>
-                <Button
-                  variant={answers[q.id] === false ? 'default' : 'outline'}
-                  onClick={() => handleAnswer(q.id, false)}
-                >
-                  Non
-                </Button>
-              </div>
-            </div>
-          ))}
-          <Button onClick={analyserReponses}>Analyser mes réponses</Button>
-        </div>
-      )}
+        {!specialite ? (
+          <Card>
+            <CardContent className="space-y-6 py-6">
+              {questions.map(q => (
+                <div key={q.id}>
+                  <p className="font-medium mb-2">{q.text}</p>
+                  <div className="flex gap-4">
+                    <Button
+                      variant={answers[q.field] === "oui" ? "default" : "outline"}
+                      onClick={() => handleAnswer(q.field, "oui")}
+                    >
+                      Oui
+                    </Button>
+                    <Button
+                      variant={answers[q.field] === "non" ? "default" : "outline"}
+                      onClick={() => handleAnswer(q.field, "non")}
+                    >
+                      Non
+                    </Button>
+                  </div>
+                </div>
+              ))}
 
-      {step === 2 && (
-        <>
-          <p className="mb-4">🔍 Spécialité recommandée : <strong>{specialite}</strong></p>
+              <Button onClick={handleSubmit} className="w-full mt-4">
+                Valider mes réponses
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-10">
+              <h2 className="text-xl font-semibold mb-4">Spécialité recommandée :</h2>
+              <p className="text-2xl text-purple-700 font-bold">{specialite}</p>
 
-          <div className="grid gap-4 mb-6">
-            {medecins.map((m) => (
-              <div
-                key={m.id}
-                className={`p-4 border rounded cursor-pointer ${
-                  selectedMedecinId === m.id ? 'bg-blue-100' : ''
-                }`}
-                onClick={() => setSelectedMedecinId(m.id)}
+              <Button
+                onClick={() => {
+                  setSpecialite(null)
+                  setAnswers({})
+                }}
+                className="mt-6"
               >
-                <p><strong>{m.nom} {m.prenom}</strong></p>
-                <p>Email : {m.email}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-4 mb-4">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <Input type="time" value={heure} onChange={(e) => setHeure(e.target.value)} />
-            <Textarea placeholder="Motif du rendez-vous" value={motif} onChange={(e) => setMotif(e.target.value)} />
-          </div>
-
-          <Button onClick={handleRdvSubmit}>Réserver le RDV</Button>
-        </>
-      )}
-
-      {message && <p className="mt-4 text-sm">{message}</p>}
-    </div>
+                Recommencer
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </main>
   )
 }

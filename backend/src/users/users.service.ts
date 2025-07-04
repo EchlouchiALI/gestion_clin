@@ -82,6 +82,7 @@ export class UsersService {
   async findById(id: number) {
     return this.userRepo.findOne({
       where: { id },
+      relations: ['medecin'],
       select: [
         'id',
         'nom',

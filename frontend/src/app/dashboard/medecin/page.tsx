@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-
+import { API_URL } from "@/lib/config"
 type Medecin = {
   nom: string
   prenom: string
@@ -56,10 +56,10 @@ export default function DashboardMedecinPage() {
     const loadData = async () => {
       try {
         const [profileRes, patientsRes, rdvRes, ordRes] = await Promise.all([
-          fetch("http://localhost:3001/medecin/me/profile", { headers }),
-          fetch("http://localhost:3001/medecin/patients", { headers }),
-          fetch("http://localhost:3001/medecin/me/rendezvous", { headers }),
-          fetch("http://localhost:3001/medecin/ordonnances", { headers }),
+          fetch(`${API_URL}/medecin/me/profile`, { headers }),
+          fetch(`${API_URL}/medecin/patients`, { headers }),
+          fetch(`${API_URL}/medecin/me/rendezvous`, { headers }),
+          fetch(`${API_URL}/medecin/ordonnances`, { headers }),
         ])
   
         if (!profileRes.ok) throw new Error("Profil invalide")
@@ -335,7 +335,7 @@ export default function DashboardMedecinPage() {
         <p className="font-medium text-gray-900">
           {rdvItem.patient.nom} {rdvItem.patient.prenom}
         </p>
-        <p className="text-sm text-gray-600">{rdvItem.type}</p>
+        <p className="text-sm text-gray-600">{rdvItem.motif}</p>
       </div>
       <div className="text-right">
         <p className="font-medium text-blue-600">{new Date(rdvItem.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
