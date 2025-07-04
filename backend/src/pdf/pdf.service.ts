@@ -82,58 +82,56 @@ export class PdfService {
   // ✅ PDF d’Ordonnance avec Code-Barres
   async generateOrdonnancePDF(data: {
     id: number;
+    date: string;
     patient: { nom: string; prenom: string; email: string };
     medecin: { nom: string; prenom: string; specialite?: string };
     prescription: string;
-    date: string;
   }): Promise<Buffer> {
     const doc = new PDFDocument({ margin: 50 });
-    const chunks: Buffer[] = [];
-
-    const writableStream = new Writable({
+    const buffers: Buffer[] = [];
+  
+    const stream = new Writable({
       write(chunk, _encoding, callback) {
-        chunks.push(chunk);
+        buffers.push(chunk);
         callback();
       },
     });
-
-    doc.pipe(writableStream);
-
+  
+    doc.pipe(stream);
+  
+    // En-tête
     doc
-      .fillColor('#0f172a')
-      .fontSize(24)
-      .text('Polyclinique Atlas', { align: 'center' })
-      .fontSize(14)
-      .fillColor('#475569')
-      .text('Ordonnance médicale', { align: 'center' })
-      .moveDown(1.5);
-
-    doc
+      .fontSize(20)
+      .text(`Dr ${data.medecin.prenom} ${data.medecin.nom}`, { align: 'left' })
       .fontSize(12)
-      .fillColor('#000')
-      .text(`N° Ordonnance : ${data.id}`)
-      .text(`Date : ${data.date}`)
-      .text(`Médecin : Dr. ${data.medecin.prenom} ${data.medecin.nom} (${data.medecin.specialite || 'Généraliste'})`)
-      .text(`Patient : ${data.patient.prenom} ${data.patient.nom}`)
-      .text(`Email patient : ${data.patient.email}`)
+      .text(`${data.medecin.specialite || 'Médecin généraliste'}`, { align: 'left' })
+      .text('Polyclinique Atlas')
+      .text('123 rue Principale, Ville')
+      .text('Tél: 05 24 00 00 00')
       .moveDown();
-
+  
+    // Infos patient
     doc
       .fontSize(12)
-      .text('Prescription :', { underline: true })
-      .moveDown(0.5)
-      .font('Times-Roman')
-      .fontSize(13)
-      .text(data.prescription, { align: 'left' })
-      .moveDown(2);
-
+      .text(`Date : ${data.date}`, { align: 'right' })
+      .moveDown()
+      .text(`Patient : ${data.patient.prenom} ${data.patient.nom}`)
+      .text(`Email : ${data.patient.email}`)
+      .moveDown();
+  
+    // Prescription
     doc
-      .fontSize(10)
-      .fillColor('gray')
-      .text('Polyclinique Atlas - 123 rue Principale, Ville - Tél: 05 24 00 00 00', {
-        align: 'center',
-      });
-
+      .fontSize(14)
+      .text('Ordonnance médicale', { underline: true })
+      .moveDown()
+      .fontSize(12)
+      .text(data.prescription, {
+        align: 'left',
+        lineGap: 6,
+      })
+      .moveDown(2);
+  
+    // Pied + Code-barres
     const barcode = await bwipjs.toBuffer({
       bcid: 'code128',
       text: `${data.id}`,
@@ -142,18 +140,20 @@ export class PdfService {
       includetext: true,
       textxalign: 'center',
     });
-
-    doc.image(barcode, 220, doc.y + 10, { fit: [150, 50] });
-
+  
+    doc.image(barcode, doc.page.width / 2 - 75, doc.y, {
+      fit: [150, 40],
+      align: 'center',
+    });
+  
     doc.end();
-
-    return new Promise<Buffer>((resolve) => {
-      writableStream.on('finish', () => {
-        resolve(Buffer.concat(chunks));
+  
+    return new Promise((resolve) => {
+      stream.on('finish', () => {
+        resolve(Buffer.concat(buffers));
       });
     });
   }
-
   // ✅ PDF de Dossier Patient stylé
   async generatePatientPDF(patient: any): Promise<Buffer> {
     const doc = new PDFDocument({ margin: 50 });
@@ -217,7 +217,7 @@ export class PdfService {
       });
     });
   }
-  async generateManualOrdonnancePDF(data: {
+  async generateOrdonnancePDFCustom(data: {
     nom: string;
     age: string;
     poids: string;
@@ -236,33 +236,22 @@ export class PdfService {
   
     doc.pipe(stream);
   
-    // 📌 Entête Clinique
-    doc.fontSize(18).text('Dr. Médecin', { align: 'left' });
-    doc.fontSize(12).text('Médecine Générale', { align: 'left' });
-    doc.text('Polyclinique Atlas');
-    doc.text('1, rue Principale');
-    doc.text('Tél : 05 24 00 00 00');
-    doc.moveDown();
+    // En-tête
+    doc.fontSize(20).text('ORDONNANCE MÉDICALE', { align: 'center' }).moveDown();
   
-    // 📌 Date
-    doc.text(`Fait à Casablanca, le ${new Date().toLocaleDateString()}`);
-    doc.moveDown();
+    doc.fontSize(12).text(`Nom du patient : ${data.nom}`);
+    doc.text(`Âge : ${data.age}`);
+    doc.text(`Poids : ${data.poids}`).moveDown();
   
-    // 📌 Patient
-    doc.fontSize(12).text(`${data.nom}`);
-    doc.text(`${data.age} ans, ${data.poids} kg`);
-    doc.moveDown();
+    doc.fontSize(12).text('Médicaments prescrits :', { underline: true });
+    doc.text(data.medicaments).moveDown();
   
-    // 📌 Médicaments
-    doc.fontSize(13).text(data.medicaments);
-    doc.moveDown();
+    doc.fontSize(12).text('Recommandations :', { underline: true });
+    doc.text(data.recommandations).moveDown(2);
   
-    // 📌 Recommandations
-    doc.fontSize(12).text(data.recommandations);
-    doc.moveDown(3);
-  
-    // 📌 Signature
-    doc.text('Signature : _____________________', { align: 'right' });
+    doc.fontSize(10).fillColor('gray').text('Polyclinique Atlas - Document généré automatiquement.', {
+      align: 'center',
+    });
   
     doc.end();
   

@@ -36,6 +36,8 @@ type Stats = {
 
 export default function DashboardMedecinPage() {
   const [medecin, setMedecin] = useState<Medecin | null>(null)
+  const [rendezvous, setRendezvous] = useState<any[]>([])
+
   const [stats, setStats] = useState<Stats>({
     patients: 0,
     rdvAujourdhui: 0,
@@ -68,6 +70,7 @@ export default function DashboardMedecinPage() {
         const ordonnances = ordRes.ok ? await ordRes.json() : []
   
         setMedecin(profile)
+        setRendezvous(rdv)
   
         const today = new Date()
         const startOfWeek = new Date(today)
@@ -325,23 +328,21 @@ export default function DashboardMedecinPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  { patient: "Ahmed Benali", time: "09:00", type: "Consultation" },
-                  { patient: "Fatima Alami", time: "10:30", type: "Contrôle" },
-                  { patient: "Omar Tazi", time: "14:00", type: "Urgence" },
-                ].map((rdv, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{rdv.patient}</p>
-                      <p className="text-sm text-gray-600">{rdv.type}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-blue-600">{rdv.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-4">
+  {rendezvous.map((rdvItem) => (
+    <div key={rdvItem.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div>
+        <p className="font-medium text-gray-900">
+          {rdvItem.patient.nom} {rdvItem.patient.prenom}
+        </p>
+        <p className="text-sm text-gray-600">{rdvItem.type}</p>
+      </div>
+      <div className="text-right">
+        <p className="font-medium text-blue-600">{new Date(rdvItem.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+      </div>
+    </div>
+  ))}
+</div>
             </CardContent>
           </Card>
 

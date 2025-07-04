@@ -1,7 +1,8 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Ordonnance } from '@/types/ordonnance'
 
@@ -18,12 +19,15 @@ interface Patient {
 
 export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
   const [patients, setPatients] = useState<Patient[]>([])
-  const [patientId, setPatientId] = useState<number | null>(ordonnance?.patient?.id || null)
+  const [patientId, setPatientId] = useState<number | ''>(ordonnance?.patient?.id || '')
   const [contenu, setContenu] = useState(ordonnance?.contenu || '')
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
     fetch('http://localhost:3001/medecin/patients', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data) => setPatients(data))
@@ -31,6 +35,11 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
   }, [])
 
   const handleSubmit = async () => {
+    if (!patientId || !contenu) {
+      alert('Veuillez remplir tous les champs.')
+      return
+    }
+
     const payload = {
       contenu,
       patient: { id: patientId },
@@ -42,11 +51,17 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
       : `http://localhost:3001/medecin/ordonnances`
 
     try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Token non trouvé, veuillez vous reconnecter.')
+        return
+      }
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       })
@@ -70,10 +85,13 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
         <label className="block mb-2 font-semibold">👨‍⚕️ Patient</label>
         <select
           className="w-full border p-2 rounded mb-4"
-          value={patientId || ''}
+          value={patientId}
           onChange={(e) => setPatientId(Number(e.target.value))}
+          required
         >
-          <option value='' disabled>Choisir un patient</option>
+          <option value="" disabled>
+            Choisir un patient
+          </option>
           {patients.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nom} {p.prenom}
@@ -87,6 +105,7 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
           onChange={(e) => setContenu(e.target.value)}
           placeholder="Exemple : Doliprane 3x/jour, antibiotiques..."
           className="mb-4"
+          required
         />
 
         <Button onClick={handleSubmit} disabled={!patientId || !contenu}>

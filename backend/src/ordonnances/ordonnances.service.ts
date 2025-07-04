@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ordonnance } from './ordonnance.entity';
@@ -23,8 +27,6 @@ export class OrdonnancesService {
     private readonly pdfService: PdfService,
     private readonly mailService: MailService,
   ) {}
-
-  
 
   async findOne(id: number): Promise<Ordonnance> {
     const ordonnance = await this.ordonnanceRepository.findOne({
@@ -132,14 +134,65 @@ export class OrdonnancesService {
     medicaments: string;
     recommandations: string;
   }): Promise<Buffer> {
-    return this.pdfService.generateManualOrdonnancePDF(data);
+    return this.pdfService.generateOrdonnancePDFCustom(data);
   }
+  
   async findByMedecin(medecinId: number): Promise<Ordonnance[]> {
     return this.ordonnanceRepository.find({
       where: { medecin: { id: medecinId } },
       relations: ['patient', 'medecin'],
       order: { date: 'DESC' },
-    })
+    });
   }
-  
+
+  async updateOrdonnance(id: number, medecinId: number, dto: CreateOrdonnanceDto): Promise<Ordonnance> {
+    const ordonnance = await this.ordonnanceRepository.findOne({
+      where: { id },
+      relations: ['medecin', 'patient'],
+    });
+
+    if (!ordonnance) throw new NotFoundException('Ordonnance non trouvée');
+
+    if (ordonnance.medecin.id !== medecinId) {
+      throw new UnauthorizedException("Vous ne pouvez modifier que vos propres ordonnances");
+    }
+
+    ordonnance.contenu = dto.contenu;
+    await this.ordonnanceRepository.save(ordonnance);
+    return ordonnance;
+  }
+
+  async sendOrdonnanceByEmail(id: number) {
+    const ordonnance = await this.findOne(id);
+
+    const pdfBuffer = await this.pdfService.generateOrdonnancePDF({
+      id: ordonnance.id,
+      date: ordonnance.date,
+      patient: {
+        nom: ordonnance.patient.nom,
+        prenom: ordonnance.patient.prenom,
+        email: ordonnance.patient.email,
+      },
+      medecin: {
+        nom: ordonnance.medecin.nom,
+        prenom: ordonnance.medecin.prenom,
+        specialite: ordonnance.medecin.specialite,
+      },
+      prescription: ordonnance.contenu,
+    });
+
+    await this.mailService.sendMailWithAttachment({
+      to: ordonnance.patient.email,
+      subject: 'Votre ordonnance – Polyclinique Atlas',
+      html: `
+        <p>Bonjour ${ordonnance.patient.prenom},</p>
+        <p>Voici votre ordonnance transmise par votre médecin.</p>
+        <p>Vous la trouverez en pièce jointe (PDF).</p>
+        <br/>
+        <p style="font-size: 0.9rem; color: gray;">Polyclinique Atlas</p>
+      `,
+      buffer: pdfBuffer,
+      filename: `ordonnance-${ordonnance.id}.pdf`,
+    });
+  }
 }
