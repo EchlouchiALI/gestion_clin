@@ -17,6 +17,7 @@ import { DossiersModule } from './dossiers/dossiers.module';
 import { RendezvousModule } from './rendezvous/rendezvous.module';
 import { MailModule } from './mail/mail.module';
 import { OrdonnancesModule } from './ordonnances/ordonnances.module';
+import { MessagesModule } from './messages/messages.module';
 
 // 🔐 Garde de rôles
 import { RolesGuard } from './common/guards/roles.guard';
@@ -40,7 +41,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 
     // 🔐 JWT config
     JwtModule.register({
-      secret: process.env.JWT_SECRET,
+      secret: process.env.JWT_SECRET || 'secret-default',
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
     }),
 
@@ -59,9 +60,7 @@ import { RolesGuard } from './common/guards/roles.guard';
       template: {
         dir: join(__dirname, '..', 'templates'),
         adapter: new HandlebarsAdapter(),
-        options: {
-          strict: true,
-        },
+        options: { strict: true },
       },
     }),
 
@@ -74,10 +73,10 @@ import { RolesGuard } from './common/guards/roles.guard';
     RendezvousModule,
     MailModule,
     OrdonnancesModule,
+    MessagesModule,
     ScheduleModule.forRoot(),
   ],
 
-  // ✅ Pas besoin de déclarer les contrôleurs ici
   providers: [
     {
       provide: APP_GUARD,

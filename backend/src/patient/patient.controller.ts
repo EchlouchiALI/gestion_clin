@@ -9,7 +9,16 @@ import {
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { PatientService } from 'src/patient/patient.service';
+import { PatientService } from './patient.service';
+import { Request as ExpressRequest } from 'express';
+
+interface AuthenticatedRequest extends ExpressRequest {
+  user: {
+    id: number;
+    email: string;
+    role: string;
+  };
+}
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('medecin')
@@ -17,13 +26,14 @@ import { PatientService } from 'src/patient/patient.service';
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
-  // ✅ Supprimer un patient appartenant au médecin connecté
   @Delete('patients/:id')
-  async deletePatient(@Param('id') id: number, @Request() req) {
+  async deletePatient(
+    @Param('id') id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const patient = await this.patientService.findOne(id);
 
-    // Vérifie que le patient existe et appartient bien au médecin connecté
-    if (!patient || !patient.medecin || patient.medecin.id !== req.user.sub) {
+    if (!patient || !patient.medecin || patient.medecin.id !== req.user.id) {
       throw new NotFoundException('Patient introuvable ou non autorisé');
     }
 

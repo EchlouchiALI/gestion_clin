@@ -99,4 +99,11 @@ export class MedecinsService {
       order: { date: 'DESC' },
     });
   }
+  async findBySpecialite(specialite: string): Promise<Medecin[]> {
+    return this.medecinRepository.find({
+      where: { specialite: Like(`%${specialite}%`) },
+      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
+      order: { nom: 'ASC' },
+    });
+}
 }

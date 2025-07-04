@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
 
 // Fallback stats when no auth token is present (preview / demo mode)
 
@@ -39,26 +41,41 @@ export default function AdminDashboard() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [rdvParJour, setRdvParJour] = useState<{ name: string; rdv: number }[]>([])
+
 
   const fetchStats = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true)
       else setLoading(true)
-
+  
       const token = localStorage.getItem("token")
-
-      // Aucune authentification en mode preview : on charge les données factices
-      if (!token) {
-        console.warn("Aucun token d'authentification trouvé. Passage en mode démo avec des statistiques factices.")
-        
-        setError("")
-        return
-      }
-
+      if (!token) return
+  
       const res = await axios.get("http://localhost:3001/admin/stats", {
         headers: { Authorization: `Bearer ${token}` },
       })
+      
       setStats(res.data)
+  
+      // Exemple de transformation des rendez-vous par jour (adapté à ta structure)
+      // Supposons que res.data.rdvDetails est un tableau de RDV avec une date 'dateRdv'
+      if (res.data.rdvDetails) {
+        const jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        const counts = jours.map((jour) => {
+          // Compter les rdv pour chaque jour (exemple basique, adapter selon données)
+          const count = res.data.rdvDetails.filter((rdv: any) => {
+            const date = new Date(rdv.dateRdv)
+            return date.toLocaleDateString("fr-FR", { weekday: "short" }) === jour
+          }).length
+          return { name: jour, rdv: count }
+        })
+        setRdvParJour(counts)
+      } else {
+        // Sinon données par défaut ou vide
+        setRdvParJour([])
+      }
+  
       setError("")
     } catch (err: any) {
       console.error("Erreur lors du chargement des statistiques:", err)
@@ -67,14 +84,13 @@ export default function AdminDashboard() {
         handleLogout()
       } else {
         setError("Erreur lors du chargement des statistiques.")
-        // En cas d'erreur, utiliser les données de démo
-       
       }
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
   }
+  
 
   useEffect(() => {
     fetchStats()
@@ -229,14 +245,14 @@ export default function AdminDashboard() {
                 label="Utilisateurs totaux"
                 value={stats.totalAllUsers}
                 trend="up"
-                trendValue="+12%"
+                
               />
               <StatCard
                 icon={UserPlus}
                 label="Patients"
                 value={stats.totalPatients}
                 trend="up"
-                trendValue="+8%"
+                
                 onClick={handleNavigateToPatients}
                 clickable={true}
               />
@@ -245,7 +261,7 @@ export default function AdminDashboard() {
                 label="Médecins"
                 value={stats.totalMedecins}
                 trend="up"
-                trendValue="+3%"
+                
                 onClick={handleNavigateToMedecins}
                 clickable={true}
               />
@@ -254,14 +270,17 @@ export default function AdminDashboard() {
                 label="Rendez-vous"
                 value={stats.totalRdv}
                 trend="up"
-                trendValue="+15%"
+                
                 onClick={handleNavigateToRendezVous}
                 clickable={true}
               />
             </>
           ) : null}
         </div>
+        
       </div>
     </div>
   )
+  
+
 }
