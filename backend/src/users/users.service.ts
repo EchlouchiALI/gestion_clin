@@ -95,4 +95,12 @@ export class UsersService {
       ],
     });
   }
+  // 📂 user.service.ts
+async findAllMedecins() {
+  return this.userRepo.find({
+    where: { role: 'medecin' },
+    select: ['id', 'nom', 'prenom', 'specialite'], // ce que tu veux exposer
+  })
+}
+
 }

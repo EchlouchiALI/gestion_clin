@@ -1,6 +1,7 @@
 import {
   Controller,
   Delete,
+  Get,
   Param,
   Request,
   UseGuards,
@@ -10,6 +11,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { PatientService } from './patient.service';
+import { UsersService } from 'src/users/users.service';
 import { Request as ExpressRequest } from 'express';
 
 interface AuthenticatedRequest extends ExpressRequest {
@@ -21,12 +23,16 @@ interface AuthenticatedRequest extends ExpressRequest {
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('medecin')
-@Controller('medecin')
+@Controller()
 export class PatientController {
-  constructor(private readonly patientService: PatientService) {}
+  constructor(
+    private readonly patientService: PatientService,
+    private readonly userService: UsersService,
+  ) {}
 
-  @Delete('patients/:id')
+  // 🔴 Accessible seulement au médecin
+  @Delete('medecin/patients/:id')
+  @Roles('medecin')
   async deletePatient(
     @Param('id') id: number,
     @Request() req: AuthenticatedRequest,
@@ -39,5 +45,12 @@ export class PatientController {
 
     await this.patientService.delete(id);
     return { message: 'Patient supprimé' };
+  }
+
+  // 🔵 Accessible au patient (QCM terminé ➜ afficher tous les médecins)
+  @Get('patient/medecins')
+  @Roles('patient')
+  async getAllMedecins() {
+    return this.userService.findAllMedecins();
   }
 }

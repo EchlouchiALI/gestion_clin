@@ -29,6 +29,8 @@ export class User {
 
   @Column({ default: 'patient' })
   role: 'patient' | 'medecin' | 'admin';
+  @Column({ nullable: true })
+specialite: string;
 
   @Column({ type: 'varchar', nullable: true })
   resetCode: string | null;
