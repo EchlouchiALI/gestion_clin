@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException ,ForbiddenException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RendezVous } from './rendezvous.entity';
@@ -126,12 +126,23 @@ export class RendezvousService {
     return await this.rendezvousRepo.save(rdv);
   }
 
-  async delete(id: number) {
-    const rdv = await this.rendezvousRepo.findOne({ where: { id } });
-    if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
-    await this.rendezvousRepo.remove(rdv);
+  async delete(id: number, user?: any) {
+    const rdv = await this.rendezvousRepo.findOne({
+      where: { id },
+      relations: ['patient'],
+    });
+  
+    if (!rdv) throw new NotFoundException("Rendez-vous introuvable");
+  
+    // Si user est passé (ex: patient connecté), on vérifie que c’est bien lui
+    if (user && user.role === 'patient' && rdv.patient.id !== user.id) {
+      throw new ForbiddenException("Non autorisé à supprimer ce rendez-vous");
+    }
+  
+    await this.rendezvousRepo.delete(id);
     return { message: 'Rendez-vous supprimé' };
   }
+  
 
   async generatePdfFor(id: number): Promise<Buffer> {
     const rdv = await this.rendezvousRepo.findOne({
@@ -154,13 +165,12 @@ export class RendezvousService {
   }
 
   async update(id: number, data: {
-    patientId?: number;
     medecinId?: number;
     date?: string;
     heure?: string;
     motif?: string;
     statut?: string;
-  }) {
+  }, user?: any) {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
       relations: ['patient', 'medecin'],
@@ -168,14 +178,16 @@ export class RendezvousService {
   
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
   
-    if (data.patientId) {
-      const patient = await this.userRepo.findOne({ where: { id: data.patientId } });
-      if (!patient) throw new NotFoundException('Patient introuvable');
-      rdv.patient = patient;
+    // 🛡 Vérification d'autorisation si c’est un patient
+    if (user && user.role === 'patient' && rdv.patient.id !== user.id) {
+      throw new ForbiddenException("Non autorisé à modifier ce rendez-vous");
     }
   
+    // ✅ Mises à jour
     if (data.medecinId) {
-      const medecin = await this.userRepo.findOne({ where: { id: data.medecinId, role: 'medecin' } });
+      const medecin = await this.userRepo.findOne({
+        where: { id: data.medecinId, role: 'medecin' },
+      });
       if (!medecin) throw new NotFoundException('Médecin introuvable');
       rdv.medecin = medecin;
     }
@@ -194,6 +206,7 @@ export class RendezvousService {
   
     return await this.rendezvousRepo.save(rdv);
   }
+  
   
   
 
@@ -238,5 +251,7 @@ export class RendezvousService {
   
     return await this.rendezvousRepo.save(rdv);
   }
+  
+  
   
 }

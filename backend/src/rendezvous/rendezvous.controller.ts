@@ -147,4 +147,28 @@ export class RendezvousController {
     const user = req.user as any;
     return this.rendezvousService.updateStatut(+id, body.statut, body.notes, user.id);
   }
+  @UseGuards(JwtAuthGuard)
+@Delete(':id')
+async deleteRendezvous(@Param('id') id: number, @Req() req: Request) {
+  const user = req.user as any;
+  return this.rendezvousService.delete(id, user);
+}
+@UseGuards(JwtAuthGuard)
+@Patch(':id')
+async update(
+  @Param('id') id: number,
+  @Body() body: {
+    medecinId?: number;
+    date?: string;
+    heure?: string;
+    motif?: string;
+    statut?: string;
+  },
+  @Req() req: Request,
+) {
+  const user = req.user as any;
+  return this.rendezvousService.update(id, body, user);
+}
+
+
 }

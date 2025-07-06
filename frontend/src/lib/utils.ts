@@ -1,10 +1,7 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf'
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url'
 
-/**
- * Combine des classes CSS conditionnellement avec clsx, puis merge avec tailwind-merge.
- * Très utile pour composer des className avec Tailwind proprement.
- */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(...inputs))
-}
+// ⚙️ Configuration du worker
+GlobalWorkerOptions.workerSrc = workerSrc
+
+export { getDocument }
