@@ -75,7 +75,8 @@ export default function PagePrendreRdv() {
     if (!selectedMedecin || !date || !heure) return alert("Veuillez remplir tous les champs")
 
     const token = localStorage.getItem("token")
-    const res = await fetch("http://localhost:3001/patient/rendezvous", {
+    const res = await fetch("http://localhost:3001/rendezvous/patient", {
+
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -14,10 +14,11 @@ import { Patient } from './patient.entity';
 import { User } from '../users/user.entity';
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Medecin } from '../medecins/medecin.entity';
+import { Activity } from '../activity/activity.entity'; 
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Patient, User, RendezVous, Medecin]),
+    TypeOrmModule.forFeature([Patient, User, RendezVous, Medecin,Activity]),
   ],
   controllers: [
     PatientController,          // 🔹 /medecin/patients

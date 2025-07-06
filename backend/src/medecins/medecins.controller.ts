@@ -32,14 +32,17 @@ export class MedecinsController {
   ) {}
 
   @Get('me/profile')
-  async getProfile(@Request() req) {
-    return this.medecinsService.findOne(req.user.id);
-  }
+async getProfile(@Request() req) {
+  console.log('🧑‍⚕️ ID Médecin connecté =', req.user.id);
+  return this.medecinsService.findOne(req.user.id);
+}
+
 
   @Get('me/rendezvous')
-  async getRendezvous(@Request() req) {
-    return this.rendezvousService.findByMedecinId(req.user.id);
-  }
+async getRendezvous(@Request() req) {
+  return this.rendezvousService.findByMedecin(req.user.id);
+}
+
 
   @Get('patients')
   async getMyPatients(@Request() req) {

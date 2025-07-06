@@ -82,23 +82,32 @@ export default function MedecinsPage() {
   const fetchMedecins = async () => {
     try {
       const token = localStorage.getItem("token")
-      const res = await axios.get("http://localhost:3001/medecin/admin/medecins", {
-  headers: { Authorization: `Bearer ${token}` },
-    })
+      if (!token) {
+        toast.error("Token manquant. Veuillez vous reconnecter.")
+        return
+      }
+  
+      const res = await axios.get("http://localhost:3001/admin/medecins", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+  
+      console.log("✅ Médecins depuis backend :", res.data) // 🔍 ICI
       setMedecins(res.data)
-    } catch (err) {
-      console.error(err)
-      toast.error("Erreur lors du chargement")
+    } catch (err: any) {
+      console.error("Erreur fetchMedecins:", err.response?.data || err.message)
+      toast.error("Erreur lors du chargement des médecins")
     } finally {
       setLoading(false)
     }
   }
+  
+  
 
   const deleteMedecin = async (id: number) => {
     if (!confirm("Supprimer ce médecin ?")) return
     try {
       const token = localStorage.getItem("token")
-      await axios.delete(`http://localhost:3001/medecin/admin/medecins/${id}`, {
+      await axios.delete(`http://localhost:3001/admin/medecins/${id}`, {
   headers: { Authorization: `Bearer ${token}` },
 })
       setMedecins((prev) => prev.filter((m) => m.id !== id))
@@ -118,7 +127,7 @@ export default function MedecinsPage() {
     try {
       const token = localStorage.getItem("token")
       await axios.post(
-        "http://localhost:3001/medecin/admin/medecins/message", // ✅ Correction ici
+        "http://localhost:3001/admin/medecins/message", // ✅ Correction ici
         {
           email: selectedEmail,
           content: message,
@@ -143,7 +152,7 @@ export default function MedecinsPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("token")
-      await axios.post("http://localhost:3001/medecin/admin/medecins", formData, {
+      await axios.post("http://localhost:3001/admin/medecins", formData, {
   headers: { Authorization: `Bearer ${token}` },
 })
       toast.success("Médecin ajouté avec succès")
@@ -173,8 +182,8 @@ export default function MedecinsPage() {
   
     try {
       const token = localStorage.getItem("token")
-      await axios.put(
-        `http://localhost:3001/medecin/admin/medecins/${editingMedecin.id}`,
+      await axios.patch(
+        `http://localhost:3001/admin/medecins/${editingMedecin.id}`,
         editFormData,
         {
           headers: { Authorization: `Bearer ${token}` },

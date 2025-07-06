@@ -33,79 +33,117 @@ type Stats = {
   ordonnances: number
   rdvSemaine: number
 }
+export interface Activity {
+  id: number;
+  type: string;
+  description: string;
+  date: string; // ou Date, selon ce que tu préfères
+  // ajoute les autres champs nécessaires
+}
 
 export default function DashboardMedecinPage() {
-  const [medecin, setMedecin] = useState<Medecin | null>(null)
-  const [rendezvous, setRendezvous] = useState<any[]>([])
+  const [medecin, setMedecin] = useState<Medecin | null>(null);
+  const [rendezvous, setRendezvous] = useState<any[]>([]);
+  const [ordonnances, setOrdonnances] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   const [stats, setStats] = useState<Stats>({
     patients: 0,
     rdvAujourdhui: 0,
     ordonnances: 0,
     rdvSemaine: 0,
-  })
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  });
+
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return router.push("/login")
-  
-    const headers = { Authorization: `Bearer ${token}` }
-  
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
     const loadData = async () => {
       try {
-        const [profileRes, patientsRes, rdvRes, ordRes] = await Promise.all([
+        const [profileRes, patientsRes, rdvRes, ordRes, activitiesRes] = await Promise.all([
           fetch(`${API_URL}/medecin/me/profile`, { headers }),
           fetch(`${API_URL}/medecin/patients`, { headers }),
           fetch(`${API_URL}/medecin/me/rendezvous`, { headers }),
           fetch(`${API_URL}/medecin/ordonnances`, { headers }),
-        ])
-  
-        if (!profileRes.ok) throw new Error("Profil invalide")
-  
-        const profile = await profileRes.json()
-        const patients = patientsRes.ok ? await patientsRes.json() : []
-        const rdv = rdvRes.ok ? await rdvRes.json() : []
-        const ordonnances = ordRes.ok ? await ordRes.json() : []
-  
-        setMedecin(profile)
-        setRendezvous(rdv)
-  
-        const today = new Date()
-        const startOfWeek = new Date(today)
-        startOfWeek.setHours(0, 0, 0, 0)
-        startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
-        const endOfWeek = new Date(startOfWeek)
-        endOfWeek.setDate(startOfWeek.getDate() + 6)
-  
+          fetch(`${API_URL}/activities`, { headers }), // adapte l'URL selon ton API pour activités
+        ]);
+
+        if (!profileRes.ok) throw new Error("Profil invalide");
+
+        const profile = await profileRes.json();
+        const patients = patientsRes.ok ? await patientsRes.json() : [];
+        const rdv = rdvRes.ok ? await rdvRes.json() : [];
+        const ordonnances = ordRes.ok ? await ordRes.json() : [];
+        const activities = activitiesRes.ok ? await activitiesRes.json() : [];
+
+        console.log("Activités reçues :", activities);
+
+        setMedecin(profile);
+        setPatients(patients);
+        setRendezvous(rdv);
+        setOrdonnances(ordonnances);
+        setActivities(activities);
+
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setHours(0, 0, 0, 0);
+        startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
         const rdvAuj = rdv.filter(
           (r: any) => new Date(r.date).toDateString() === today.toDateString()
-        ).length
-  
+        ).length;
+
         const rdvWeek = rdv.filter((r: any) => {
-          const d = new Date(r.date)
-          return d >= startOfWeek && d <= endOfWeek
-        }).length
-  
+          const d = new Date(r.date);
+          return d >= startOfWeek && d <= endOfWeek;
+        }).length;
+
         setStats({
           patients: patients.length,
           rdvAujourdhui: rdvAuj,
           ordonnances: ordonnances.length,
           rdvSemaine: rdvWeek,
-        })
+        });
       } catch (err) {
-        console.error("❌ Erreur chargement dashboard :", err)
-        router.push("/login")
+        console.error("❌ Erreur chargement dashboard :", err);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-  
-    loadData()
-  }, [router])
-  
+    };
 
+    loadData();
+  }, [router]);
+  
+  function timeAgo(dateString: string) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+  
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      if (diffMinutes < 1) return "À l'instant";
+      return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
+    } else if (diffHours < 24) {
+      return `Il y a ${diffHours} heure${diffHours > 1 ? "s" : ""}`;
+    } else {
+      const diffDays = Math.floor(diffHours / 24);
+      return `Il y a ${diffDays} jour${diffDays > 1 ? "s" : ""}`;
+    }
+  }
+  
   const handleLogout = () => {
     localStorage.removeItem("token")
     router.push("/login")
@@ -235,7 +273,13 @@ export default function DashboardMedecinPage() {
             <div className="relative z-10">
               <div className="flex items-center space-x-3 mb-4">
                 <Heart className="h-8 w-8 text-pink-300" />
-                <h2 className="text-3xl font-bold">Bonjour Dr. {medecin?.prenom} !</h2>
+                <h2 className="text-3xl font-bold">
+  Bonjour Dr. {medecin?.prenom} {medecin?.nom} 👨‍⚕️ – 
+</h2>
+<p className="text-blue-100 text-lg">
+  Nous sommes le {new Date().toLocaleDateString('fr-FR')}
+</p>
+
               </div>
               <p className="text-blue-100 text-lg">
                 Vous avez {stats.rdvAujourdhui} rendez-vous aujourd'hui. Bonne journée de consultation !
@@ -346,34 +390,37 @@ export default function DashboardMedecinPage() {
             </CardContent>
           </Card>
 
-          {/* Activité récente */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-green-600" />
-                <span>Activité Récente</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { action: "Ordonnance créée", patient: "Youssef Amrani", time: "Il y a 2h" },
-                  { action: "Nouveau patient", patient: "Aicha Bennani", time: "Il y a 4h" },
-                  { action: "RDV confirmé", patient: "Hassan Idrissi", time: "Il y a 6h" },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.action} - {activity.patient}
-                      </p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          
+         {/* Activité récente */}
+<Card className="border-0 shadow-sm">
+  <CardHeader className="pb-3">
+    <CardTitle className="flex items-center space-x-2">
+      <Activity className="h-5 w-5 text-green-600" />
+      <span>Activité Récente</span>
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    {activities.length === 0 ? (
+      <p>Aucune activité récente.</p>
+    ) : (
+      <div className="space-y-4">
+  {activities.length === 0 && <p>Aucune activité récente.</p>}
+  {activities.map((activity) => (
+    <div key={activity.id} className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-900">
+          {activity.type} - {activity.description}
+        </p>
+        <p className="text-xs text-gray-500">{timeAgo(activity.date)}</p>
+      </div>
+    </div>
+  ))}
+</div>
+
+    )}
+  </CardContent>
+</Card>
         </motion.div>
       </div>
     </div>

@@ -12,11 +12,12 @@ import { MedecinProfileController } from './medecin-profile.controller';
 import { MailModule } from '../mail/mail.module';
 import { RendezvousModule } from '../rendezvous/rendezvous.module';
 import { PatientModule } from '../patient/patient.module';
-import { PdfModule } from '../pdf/pdf.module'; // ✅ Import du module PDF
+import { PdfModule } from '../pdf/pdf.module'; 
+import { User } from '../users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Medecin, Patient, Ordonnance]),
+    TypeOrmModule.forFeature([Medecin, Patient, Ordonnance,User]),
     MailModule,
     RendezvousModule,
     PatientModule,

@@ -11,6 +11,8 @@ import { User } from '../users/user.entity';
 import { Medecin } from '../medecins/medecin.entity';
 import { MailService } from '../mail/mail.service';
 import { CreateOrdonnanceDto } from './dto/create-ordonnance.dto';
+import { Activity } from '../activity/activity.entity'; // adapte le chemin si besoin
+
 
 @Injectable()
 export class OrdonnancesService {
@@ -26,6 +28,9 @@ export class OrdonnancesService {
 
     private readonly pdfService: PdfService,
     private readonly mailService: MailService,
+    @InjectRepository(Activity)
+    private readonly activityRepo: Repository<Activity>,
+    
   ) {}
 
   async findOne(id: number): Promise<Ordonnance> {
@@ -87,6 +92,10 @@ export class OrdonnancesService {
       buffer: pdfBuffer,
       filename: `ordonnance-${saved.id}.pdf`,
     });
+    await this.activityRepo.save({
+      type: 'Ordonnance créée',
+      description: `${patient.prenom} ${patient.nom}`,
+    });
 
     return saved;
   }
@@ -136,7 +145,7 @@ export class OrdonnancesService {
   }): Promise<Buffer> {
     return this.pdfService.generateOrdonnancePDFCustom(data);
   }
-  
+
   async findByMedecin(medecinId: number): Promise<Ordonnance[]> {
     return this.ordonnanceRepository.find({
       where: { medecin: { id: medecinId } },
@@ -158,6 +167,13 @@ export class OrdonnancesService {
     }
 
     ordonnance.contenu = dto.contenu;
+
+    if (dto.patientId && ordonnance.patient.id !== dto.patientId) {
+      const newPatient = await this.userRepo.findOne({ where: { id: dto.patientId } });
+      if (!newPatient) throw new NotFoundException("Nouveau patient introuvable");
+      ordonnance.patient = newPatient;
+    }
+
     await this.ordonnanceRepository.save(ordonnance);
     return ordonnance;
   }

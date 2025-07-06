@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RendezVous } from './rendezvous.entity';
-import { Medecin } from '../medecins/medecin.entity';
 import { User } from '../users/user.entity';
 import { PdfService } from '../pdf/pdf.service';
 import { MailService } from '../mail/mail.service';
@@ -15,9 +14,6 @@ export class RendezvousService {
     @InjectRepository(RendezVous)
     private readonly rendezvousRepo: Repository<RendezVous>,
 
-    @InjectRepository(Medecin)
-    private readonly medecinRepo: Repository<Medecin>,
-
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
@@ -25,7 +21,6 @@ export class RendezvousService {
     private readonly mailService: MailService,
   ) {}
 
-  // 🔍 Lister tous les rendez-vous (admin)
   async findAllForAdmin() {
     return this.rendezvousRepo.find({
       relations: ['patient', 'medecin'],
@@ -33,7 +28,6 @@ export class RendezvousService {
     });
   }
 
-  // 🔍 Lister les RDV d’un patient
   async findByPatient(patientId: number) {
     return this.rendezvousRepo.find({
       where: { patient: { id: patientId } },
@@ -42,16 +36,14 @@ export class RendezvousService {
     });
   }
 
-  // 🔍 Lister les RDV d’un médecin
-  async findByMedecinId(medecinId: number) {
+  async findByMedecin(medecinId: number) {
     return this.rendezvousRepo.find({
       where: { medecin: { id: medecinId } },
-      relations: ['patient'],
+      relations: ['patient', 'medecin'],
       order: { date: 'DESC' },
     });
   }
 
-  // ➕ Créer un rendez-vous (admin)
   async createByAdmin(data: {
     patientId: number;
     medecinId: number;
@@ -59,21 +51,23 @@ export class RendezvousService {
     heure: string;
     motif: string;
   }) {
-    const patient = await this.userRepo.findOne({ where: { id: data.patientId } });
-    const medecin = await this.medecinRepo.findOne({ where: { id: data.medecinId } });
+    const { patientId, medecinId, date, heure, motif } = data;
+
+    const patient = await this.userRepo.findOne({ where: { id: patientId } });
+    const medecin = await this.userRepo.findOne({ where: { id: medecinId, role: 'medecin' } });
 
     if (!patient || !medecin) throw new NotFoundException('Patient ou médecin introuvable');
 
-    const newRdv = this.rendezvousRepo.create({
-      date: data.date,
-      heure: data.heure,
-      motif: data.motif,
+    const rdv = this.rendezvousRepo.create({
+      date,
+      heure,
+      motif,
       statut: 'à venir',
       patient,
       medecin,
     });
 
-    const saved = await this.rendezvousRepo.save(newRdv);
+    const saved = await this.rendezvousRepo.save(rdv);
 
     const pdfBuffer = await this.pdfService.generateRendezVousPDF({
       id: saved.id,
@@ -107,7 +101,31 @@ export class RendezvousService {
     return saved;
   }
 
-  // ❌ Supprimer un rendez-vous
+  async createByPatient(data: {
+    patientId: number;
+    medecinId: number;
+    date: string;
+    heure: string;
+  }) {
+    const { patientId, medecinId, date, heure } = data;
+
+    const patient = await this.userRepo.findOne({ where: { id: patientId } });
+    const medecin = await this.userRepo.findOne({ where: { id: medecinId, role: 'medecin' } });
+
+    if (!patient || !medecin) throw new NotFoundException('Patient ou médecin introuvable');
+
+    const rdv = this.rendezvousRepo.create({
+      patient,
+      medecin,
+      date,
+      heure,
+      statut: 'à venir',
+      motif: 'Consultation',
+    });
+
+    return await this.rendezvousRepo.save(rdv);
+  }
+
   async delete(id: number) {
     const rdv = await this.rendezvousRepo.findOne({ where: { id } });
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
@@ -115,7 +133,6 @@ export class RendezvousService {
     return { message: 'Rendez-vous supprimé' };
   }
 
-  // 📄 Générer un PDF pour un RDV
   async generatePdfFor(id: number): Promise<Buffer> {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
@@ -136,43 +153,50 @@ export class RendezvousService {
     });
   }
 
-  // 🔄 Modifier un rendez-vous
   async update(id: number, data: {
     patientId?: number;
     medecinId?: number;
     date?: string;
     heure?: string;
     motif?: string;
-    statut?: 'à venir' | 'passé' | 'annulé';
+    statut?: string;
   }) {
     const rdv = await this.rendezvousRepo.findOne({
       where: { id },
       relations: ['patient', 'medecin'],
     });
-
+  
     if (!rdv) throw new NotFoundException('Rendez-vous introuvable');
-
+  
     if (data.patientId) {
       const patient = await this.userRepo.findOne({ where: { id: data.patientId } });
       if (!patient) throw new NotFoundException('Patient introuvable');
       rdv.patient = patient;
     }
-
+  
     if (data.medecinId) {
-      const medecin = await this.medecinRepo.findOne({ where: { id: data.medecinId } });
+      const medecin = await this.userRepo.findOne({ where: { id: data.medecinId, role: 'medecin' } });
       if (!medecin) throw new NotFoundException('Médecin introuvable');
       rdv.medecin = medecin;
     }
-
+  
     if (data.date) rdv.date = data.date;
     if (data.heure) rdv.heure = data.heure;
     if (data.motif) rdv.motif = data.motif;
-    if (data.statut) rdv.statut = data.statut;
-
+  
+    if (data.statut) {
+      const validStatuts = ['à venir', 'passé', 'annulé'];
+      if (!validStatuts.includes(data.statut)) {
+        throw new Error('Statut invalide');
+      }
+      rdv.statut = data.statut as 'à venir' | 'passé' | 'annulé';
+    }
+  
     return await this.rendezvousRepo.save(rdv);
   }
+  
+  
 
-  // 🔁 Mettre à jour les RDV passés (manuel ou CRON)
   async markPastAppointments() {
     const now = moment();
     const futurs = await this.rendezvousRepo.find({ where: { statut: 'à venir' } });
@@ -190,9 +214,29 @@ export class RendezvousService {
     return { updated: toUpdate.length };
   }
 
-  // 🔁 Cron qui exécute markPastAppointments chaque minute
   @Cron('*/1 * * * *')
   handleCronUpdate() {
     this.markPastAppointments();
   }
+
+  async updateStatut(id: number, statut: string, notes: string | undefined, medecinId: number) {
+    const rdv = await this.rendezvousRepo.findOne({
+      where: { id, medecin: { id: medecinId } },
+      relations: ['medecin'],
+    });
+  
+    if (!rdv) throw new NotFoundException('Rendez-vous introuvable pour ce médecin.');
+  
+    // ✅ Vérification du statut
+    if (!['à venir', 'passé', 'annulé'].includes(statut)) {
+      throw new Error('Statut invalide');
+    }
+  
+    rdv.statut = statut as 'à venir' | 'passé' | 'annulé';
+  
+    if (notes !== undefined) rdv.notes = notes;
+  
+    return await this.rendezvousRepo.save(rdv);
+  }
+  
 }

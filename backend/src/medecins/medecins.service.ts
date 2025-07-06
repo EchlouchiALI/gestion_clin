@@ -4,6 +4,8 @@ import { Repository, Like } from 'typeorm';
 import { Medecin } from './medecin.entity';
 import { Patient } from '../patient/patient.entity';
 import { Ordonnance } from '../ordonnances/ordonnance.entity';
+import { User } from '../users/user.entity';
+
 
 
 @Injectable()
@@ -17,6 +19,9 @@ export class MedecinsService {
 
     @InjectRepository(Ordonnance)
     private readonly ordonnanceRepository: Repository<Ordonnance>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+
   ) {}
 
   // 📋 Liste de tous les médecins
@@ -39,19 +44,21 @@ export class MedecinsService {
   }
 
   // ✅ Trouver un médecin par e-mail (pour login/profile)
-  async findByEmail(email: string): Promise<Medecin> {
-    const medecin = await this.medecinRepository.findOne({
-      where: { email },
-      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
+  async findByEmail(email: string): Promise<User> {
+    const medecin = await this.userRepo.findOne({
+      where: { email, role: 'medecin' },
+      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'], // Assure-toi que ces champs sont dans user
     });
-
+  
     if (!medecin) {
-      throw new NotFoundException('Médecin non trouvé par email');
+      throw new NotFoundException('Médecin non trouvé');
     }
-
+  
     return medecin;
   }
-
+  
+  
+  
   // ➕ Créer un médecin
   create(data: Partial<Medecin>): Promise<Medecin> {
     const medecin = this.medecinRepository.create(data);

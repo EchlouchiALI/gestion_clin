@@ -7,16 +7,20 @@ import {
   Param,
   Body,
   Res,
+  Req,
   HttpException,
   HttpStatus,
   UseGuards,
+  Put, // ✅ Import corrigé
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { RendezvousService } from './rendezvous.service';
 import { UpdateRendezvousDto } from './dto/update-rendezvous.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
-@Controller('rendezvous') // ✅ on ne protège pas tout le contrôleur d’un coup
+@Controller('rendezvous')
 export class RendezvousController {
   constructor(private readonly rendezvousService: RendezvousService) {}
 
@@ -30,13 +34,16 @@ export class RendezvousController {
   // ✅ ADMIN - Création de rendez-vous
   @UseGuards(JwtAuthGuard)
   @Post('admin')
-  async create(@Body() body: {
-    patientId: number;
-    medecinId: number;
-    date: string;
-    heure: string;
-    motif: string;
-  }) {
+  async create(
+    @Body()
+    body: {
+      patientId: number;
+      medecinId: number;
+      date: string;
+      heure: string;
+      motif: string;
+    },
+  ) {
     return this.rendezvousService.createByAdmin(body);
   }
 
@@ -57,14 +64,54 @@ export class RendezvousController {
     return this.rendezvousService.update(+id, body);
   }
 
-  // ❌ Ne pas protéger cette route : accessible sans token
+  // ✅ PATIENT - Prise de rendez-vous
+  @UseGuards(JwtAuthGuard)
+  @Post('patient')
+  async createByPatient(
+    @Body() body: { medecinId: number; date: string; heure: string },
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+    return this.rendezvousService.createByPatient({
+      patientId: user.id,
+      ...body,
+    });
+  }
+
+  // ✅ PATIENT - Voir ses rendez-vous
+  @UseGuards(JwtAuthGuard)
+  @Get('patient')
+  async getRdvByPatient(@Req() req: Request) {
+    const user = req.user as any;
+    return this.rendezvousService.findByPatient(user.id);
+  }
+
+  // ✅ MEDECIN - Voir ses rendez-vous
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('medecin')
+  @Get()
+  async getRendezvousForMedecin(@Req() req: Request) {
+    const user = req.user as any;
+    return this.rendezvousService.findByMedecin(user.id);
+  }
+
+  // ✅ ADMIN - Voir les rendez-vous d'un médecin spécifique
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/medecin/:id')
+  async findAllByMedecin(@Param('id') medecinId: string) {
+    return this.rendezvousService.findByMedecin(+medecinId);
+  }
+
+  // ✅ Génération du PDF
   @Get(':id/pdf')
   async getPdf(@Param('id') id: string, @Res() res: Response) {
     try {
       const buffer = await this.rendezvousService.generatePdfFor(+id);
-
       if (!buffer) {
-        throw new HttpException('Rendez-vous introuvable', HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          'Rendez-vous introuvable',
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       res.set({
@@ -81,10 +128,23 @@ export class RendezvousController {
     }
   }
 
-  // ✅ Mise à jour des statuts des RDV (par CRON ou admin)
+  // ✅ Mise à jour automatique des statuts (cron manuel)
   @UseGuards(JwtAuthGuard)
   @Post('update-status')
   async forceUpdate() {
     return this.rendezvousService.markPastAppointments();
+  }
+
+  // ✅ MEDECIN - Mise à jour du statut d’un rendez-vous
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('medecin')
+  async updateStatut(
+    @Param('id') id: string,
+    @Body() body: { statut: string; notes?: string },
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+    return this.rendezvousService.updateStatut(+id, body.statut, body.notes, user.id);
   }
 }

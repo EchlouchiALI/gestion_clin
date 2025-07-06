@@ -1,5 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
-
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Dossier } from '../dossiers/dossier.entity';
 import { Medecin } from 'src/medecins/medecin.entity';
@@ -29,8 +34,9 @@ export class User {
 
   @Column({ default: 'patient' })
   role: 'patient' | 'medecin' | 'admin';
+
   @Column({ nullable: true })
-specialite: string;
+  specialite: string;
 
   @Column({ type: 'varchar', nullable: true })
   resetCode: string | null;
@@ -38,15 +44,6 @@ specialite: string;
   @Column({ default: true })
   isActive: boolean;
 
-  // Relations
-  @OneToMany(() => RendezVous, (rdv) => rdv.patient)
-  rendezvous: RendezVous[];
-
-  @OneToMany(() => Dossier, (dossier) => dossier.patient)
-  dossiers: Dossier[];
-
-  @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
-  medecin: Medecin;  // ✅ Ajout essentiel
   @Column({ nullable: true })
   telephone: string;
 
@@ -56,4 +53,16 @@ specialite: string;
   @Column({ nullable: true })
   dateNaissance: string;
 
+  // ✅ Relations
+  @OneToMany(() => RendezVous, (rdv) => rdv.patient)
+  rendezvousEnTantQuePatient: RendezVous[];
+
+  @OneToMany(() => RendezVous, (rdv) => rdv.medecin)
+  rendezvousEnTantQueMedecin: RendezVous[];
+
+  @OneToMany(() => Dossier, (dossier) => dossier.patient)
+  dossiers: Dossier[];
+
+  @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
+  medecin: Medecin;
 }

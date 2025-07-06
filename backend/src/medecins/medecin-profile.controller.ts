@@ -23,7 +23,8 @@ export class MedecinProfileController {
 
   @Get('rendezvous')
   getMyRendezvous(@Req() req) {
-    return this.rendezvousService.findByMedecinId(req.user.id);
+    return this.rendezvousService.findByMedecin(req.user.id);
+
   }
 
   @Get('ordonnances')

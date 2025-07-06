@@ -36,27 +36,27 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!patientId || !contenu) {
-      alert('Veuillez remplir tous les champs.')
-      return
+      alert('Veuillez remplir tous les champs.');
+      return;
     }
-
+  
     const payload = {
       contenu,
-      patient: { id: patientId },
-    }
-
-    const method = ordonnance ? 'PUT' : 'POST'
+      patientId: patientId,
+    };
+  
+    const method = ordonnance ? 'PUT' : 'POST';
     const url = ordonnance
       ? `http://localhost:3001/medecin/ordonnances/${ordonnance.id}`
-      : `http://localhost:3001/medecin/ordonnances`
-
+      : `http://localhost:3001/medecin/ordonnances`;
+  
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token');
       if (!token) {
-        alert('Token non trouvé, veuillez vous reconnecter.')
-        return
+        alert('Token non trouvé, veuillez vous reconnecter.');
+        return;
       }
-
+  
       const res = await fetch(url, {
         method,
         headers: {
@@ -64,17 +64,17 @@ export default function OrdonnanceForm({ ordonnance, onClose }: Props) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) throw new Error('Erreur lors de la sauvegarde')
-      alert('✅ Ordonnance enregistrée')
-      onClose()
+      });
+  
+      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      alert('✅ Ordonnance enregistrée');
+      onClose();
     } catch (err) {
-      console.error(err)
-      alert('❌ Une erreur est survenue')
+      console.error(err);
+      alert('❌ Une erreur est survenue');
     }
-  }
-
+  };
+  
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>

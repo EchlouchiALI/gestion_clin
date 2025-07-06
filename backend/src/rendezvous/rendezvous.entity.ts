@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from '../users/user.entity';
-import { Medecin } from '../medecins/medecin.entity';
 
 @Entity()
 export class RendezVous {
@@ -17,14 +16,22 @@ export class RendezVous {
   motif: string;
 
   @Column({ default: 'à venir' })
-  statut: 'à venir' | 'passé' | 'annulé';
+  statut: 'à venir' | 'passé' | 'annulé'; // ✅ Correction ici (pas deux fois)
 
-  @ManyToOne(() => User, (u) => u.rendezvous, {
+  @Column({ nullable: true })
+  notes?: string; // ✅ Champ optionnel pour ajouter une note du médecin
+
+  // ✅ Lien vers le patient
+  @ManyToOne(() => User, (u) => u.rendezvousEnTantQuePatient, {
     eager: true,
-    onDelete: 'CASCADE', // ✅ très important pour éviter l'erreur 23503
+    onDelete: 'CASCADE',
   })
   patient: User;
 
-  @ManyToOne(() => Medecin, (m) => m.rendezvous, { eager: true })
-  medecin: Medecin;
+  // ✅ Lien vers le médecin (qui est aussi un User)
+  @ManyToOne(() => User, (u) => u.rendezvousEnTantQueMedecin, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
+  medecin: User;
 }

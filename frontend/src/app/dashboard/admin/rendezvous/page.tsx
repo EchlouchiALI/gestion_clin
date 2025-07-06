@@ -95,7 +95,7 @@ export default function AdminRendezVousPage() {
   const fetchMedecins = async () => {
     try {
       const token = localStorage.getItem("token")
-      const res = await axios.get("http://localhost:3001/medecin/admin/medecins", {
+      const res = await axios.get("http://localhost:3001/admin/medecins", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setMedecins(res.data)

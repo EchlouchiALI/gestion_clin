@@ -14,6 +14,9 @@ import { MailService } from 'src/mail/mail.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from 'src/users/user.entity';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
@@ -23,6 +26,9 @@ export class AdminController {
     private adminService: AdminService,
     private userService: UsersService,
     private mailService: MailService,
+
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>, // 💡 Pour requêter les médecins
   ) {}
 
   // 📊 Statistiques
@@ -70,7 +76,7 @@ export class AdminController {
     return this.userService.deleteUser(id);
   }
 
-  // ✏️ Modifier un patient ✅ (manquait dans ton code)
+  // ✏️ Modifier un patient
   @Patch('patients/:id')
   updatePatient(
     @Param('id') id: string,
@@ -96,4 +102,33 @@ export class AdminController {
   sendMessageToPatient(@Body() body: { email: string; content: string }) {
     return this.mailService.sendMailToPatient(body.email, body.content);
   }
+
+  // 👨‍⚕️ Récupérer tous les médecins (depuis user)
+  @Get('medecins')
+getAllMedecins() {
+  return this.userService.findAllByRole('medecin');
+}
+@Patch('medecins/:id')
+updateMedecin(
+  @Param('id') id: string,
+  @Body() body: {
+    nom?: string;
+    prenom?: string;
+    email?: string;
+    telephone?: string;
+    specialite?: string;
+  },
+) {
+  return this.userService.updatePatient(+id, body); // ou updateMedecin si tu en as un spécifique
+}
+@Delete('medecins/:id')
+deleteMedecin(@Param('id') id: string) {
+  return this.userService.deleteUser(id);
+}
+@Post('medecins/message')
+sendMessageToMedecin(@Body() body: { email: string; content: string }) {
+  return this.mailService.sendMailToMedecin(body.email, body.content);
+}
+
+
 }

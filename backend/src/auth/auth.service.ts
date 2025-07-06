@@ -54,6 +54,9 @@ export class AuthService {
     // ✅ Si c’est un médecin, récupérer le vrai profil
     if (user.role === 'medecin') {
       const medecin = await this.medecinsService.findByEmail(user.email);
+if (!medecin) {
+  throw new UnauthorizedException("Compte médecin introuvable");
+}
 
       const token = this.jwtService.sign({
         sub: medecin.id, // 👈 ID du médecin, pas user.id

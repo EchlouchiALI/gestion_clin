@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { RendezVous } from 'src/rendezvous/rendezvous.entity';
+import { Activity } from '../activity/activity.entity'; 
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -17,20 +18,16 @@ export class UsersService {
 
     @InjectRepository(RendezVous)
     private readonly rendezvousRepo: Repository<RendezVous>,
+    @InjectRepository(Activity)  // << ici
+    private activityRepo: Repository<Activity>,
   ) {}
 
   // ✅ Récupérer tous les utilisateurs d’un certain rôle
   async findAllByRole(role: 'admin' | 'medecin' | 'patient') {
     return this.userRepo.find({
       where: { role },
-      select: [
-        'id',
-        'nom',
-        'prenom',
-        'email',
-        'age',            // 🟢 Ajoute ceci
-        'lieuNaissance'   // 🟢 Et ceci
-      ],
+      select: ['id', 'nom', 'prenom', 'email', 'age', 'lieuNaissance', 'specialite', 'telephone'],
+      order: { nom: 'ASC' },
     });
   }
 
@@ -66,8 +63,20 @@ export class UsersService {
       role: 'patient',
       isActive: true,
     });
-    return this.userRepo.save(newUser);
+  
+    // Sauvegarde d'abord le patient
+    const savedPatient = await this.userRepo.save(newUser);
+  
+    // Ensuite, enregistre l'activité avec les données du patient sauvegardé
+    const users = await this.userRepo.find();
+users.forEach(user => {
+  console.log(user.prenom, user.nom);
+});
+  
+    // Retourne le patient sauvegardé
+    return savedPatient;
   }
+  
 
   // ✅ Mettre à jour un patient
   async updatePatient(id: number, data: Partial<User>) {
@@ -99,6 +108,7 @@ export class UsersService {
 async findAllMedecins() {
   return this.userRepo.find({
     where: { role: 'medecin' },
+    order: { nom: 'ASC' }, 
     select: ['id', 'nom', 'prenom', 'specialite'], // ce que tu veux exposer
   })
 }

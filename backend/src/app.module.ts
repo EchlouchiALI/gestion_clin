@@ -18,6 +18,7 @@ import { RendezvousModule } from './rendezvous/rendezvous.module';
 import { MailModule } from './mail/mail.module';
 import { OrdonnancesModule } from './ordonnances/ordonnances.module';
 import { MessagesModule } from './messages/messages.module';
+import { ActivityModule } from './activity/activity.module';
 
 // 🔐 Garde de rôles
 import { RolesGuard } from './common/guards/roles.guard';
@@ -74,6 +75,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     MailModule,
     OrdonnancesModule,
     MessagesModule,
+    ActivityModule,
     ScheduleModule.forRoot(),
   ],
 
