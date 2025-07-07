@@ -3,9 +3,10 @@
 import type React from "react"
 
 import { useEffect, useState, useRef } from "react"
-import { Send, Bot, User, Shield, Award } from "lucide-react"
+import { Send, Bot, User, Shield, Award, ArrowLeft } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 type Message = {
   from: "user" | "bot"
@@ -18,6 +19,8 @@ export default function ChatbotPage() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const router = useRouter()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -95,6 +98,14 @@ export default function ChatbotPage() {
         <div className="bg-white border-b border-gray-200 px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <Button
+                onClick={() => router.back()}
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg p-2 transition-all duration-200"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
               <div className="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center">
                 <Award className="w-6 h-6 text-white" />
               </div>

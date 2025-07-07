@@ -17,9 +17,9 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-
     "esModuleInterop": true,
     "moduleResolution": "node",
     "types": ["node", "jest"]
-  }
+  },
+  "include": ["src/**/*"]
 }

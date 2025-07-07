@@ -4,6 +4,7 @@ import {
   Column,
   OneToMany,
   ManyToOne,
+  CreateDateColumn,
 } from 'typeorm';
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Dossier } from '../dossiers/dossier.entity';
@@ -69,5 +70,7 @@ export class User {
   medecin: Medecin;
   @OneToMany(() => ChatMessage, msg => msg.user)
 chatMessages: ChatMessage[]
+@CreateDateColumn({ type: 'timestamp' })
+created_at: Date;
 
 }

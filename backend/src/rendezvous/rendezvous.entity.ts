@@ -34,4 +34,6 @@ export class RendezVous {
     onDelete: 'CASCADE',
   })
   medecin: User;
+
+
 }

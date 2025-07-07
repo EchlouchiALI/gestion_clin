@@ -18,7 +18,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  ResponsiveContainer,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
+
+
 
 
 // Fallback stats when no auth token is present (preview / demo mode)
@@ -42,6 +57,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [rdvParJour, setRdvParJour] = useState<{ name: string; rdv: number }[]>([])
+  const [evolutionData, setEvolutionData] = useState<{ mois: string; patients: number; medecins: number }[]>([])
+  const [specialiteData, setSpecialiteData] = useState<{ name: string; value: number }[]>([])
+
 
 
   const fetchStats = async (isRefresh = false) => {
@@ -55,15 +73,13 @@ export default function AdminDashboard() {
       const res = await axios.get("http://localhost:3001/admin/stats", {
         headers: { Authorization: `Bearer ${token}` },
       })
-      
+  
       setStats(res.data)
   
-      // Exemple de transformation des rendez-vous par jour (adapté à ta structure)
-      // Supposons que res.data.rdvDetails est un tableau de RDV avec une date 'dateRdv'
+      // 📅 Transformation des rendez-vous par jour
       if (res.data.rdvDetails) {
         const jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
         const counts = jours.map((jour) => {
-          // Compter les rdv pour chaque jour (exemple basique, adapter selon données)
           const count = res.data.rdvDetails.filter((rdv: any) => {
             const date = new Date(rdv.dateRdv)
             return date.toLocaleDateString("fr-FR", { weekday: "short" }) === jour
@@ -72,9 +88,12 @@ export default function AdminDashboard() {
         })
         setRdvParJour(counts)
       } else {
-        // Sinon données par défaut ou vide
         setRdvParJour([])
       }
+  
+      // 📈 Ajout des données pour LineChart et PieChart
+      setEvolutionData(res.data.evolution || [])
+      setSpecialiteData(res.data.specialites || [])
   
       setError("")
     } catch (err: any) {
@@ -90,6 +109,7 @@ export default function AdminDashboard() {
       setRefreshing(false)
     }
   }
+  
   
 
   useEffect(() => {
@@ -129,7 +149,7 @@ export default function AdminDashboard() {
   }: {
     icon: any
     label: string
-    value: number
+    value: number | undefined
     trend?: "up" | "down"
     trendValue?: string
     onClick?: () => void
@@ -148,7 +168,9 @@ export default function AdminDashboard() {
               <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="text-3xl font-bold">{value.toLocaleString()}</div>
+              <div className="text-3xl font-bold">
+                {typeof value === "number" ? value.toLocaleString() : '...'}
+              </div>
               <div className="text-sm text-slate-300">{label}</div>
             </div>
           </div>
@@ -167,6 +189,7 @@ export default function AdminDashboard() {
       </CardContent>
     </Card>
   )
+  
 
   const StatCardSkeleton = () => (
     <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20">
@@ -277,7 +300,63 @@ export default function AdminDashboard() {
             </>
           ) : null}
         </div>
-        
+        {/* Graphiques */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+
+{/* 📊 BarChart des rendez-vous par jour */}
+<div className="bg-white/10 p-6 rounded-lg shadow-lg text-white">
+  <h2 className="text-xl font-bold mb-4">Rendez-vous par jour</h2>
+  <ResponsiveContainer width="100%" height={300}>
+    <BarChart data={rdvParJour}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" />
+      <XAxis dataKey="name" stroke="#fff" />
+      <YAxis stroke="#fff" />
+      <Tooltip />
+      <Bar dataKey="rdv" fill="#8884d8" />
+    </BarChart>
+  </ResponsiveContainer>
+</div>
+
+{/* 📈 LineChart de l’évolution mensuelle */}
+<div className="bg-white/10 p-6 rounded-lg shadow-lg text-white">
+  <h2 className="text-xl font-bold mb-4">Évolution mensuelle</h2>
+  <ResponsiveContainer width="100%" height={300}>
+    <LineChart data={evolutionData}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" />
+      <XAxis dataKey="mois" stroke="#fff" />
+      <YAxis stroke="#fff" />
+      <Tooltip />
+      <Line type="monotone" dataKey="patients" stroke="#8884d8" />
+      <Line type="monotone" dataKey="medecins" stroke="#82ca9d" />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
+
+{/* 🥧 PieChart des spécialités */}
+<div className="col-span-1 md:col-span-2 bg-white/10 p-6 rounded-lg shadow-lg text-white">
+  <h2 className="text-xl font-bold mb-4">Répartition des spécialités</h2>
+  <ResponsiveContainer width="100%" height={300}>
+    <PieChart>
+      <Pie
+        data={specialiteData}
+        dataKey="value"
+        nameKey="name"
+        cx="50%"
+        cy="50%"
+        outerRadius={100}
+        label
+      >
+        {specialiteData.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={`hsl(${(index * 60) % 360}, 70%, 50%)`} />
+        ))}
+      </Pie>
+      <Tooltip />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
+
+</div>
+
       </div>
     </div>
   )

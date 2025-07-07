@@ -8,7 +8,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { API_URL } from "@/lib/config"
-import { MessageCircle, FileText, Calendar, User, Stethoscope, Clock, Bell, LogOut, Heart } from "lucide-react"
+import {
+  MessageCircle,
+  FileText,
+  Calendar,
+  User,
+  Stethoscope,
+  Clock,
+  Bell,
+  LogOut,
+  Heart,
+  MapPin,
+  Phone,
+  Mail,
+  Navigation,
+} from "lucide-react"
 
 type Patient = {
   nom: string
@@ -153,6 +167,98 @@ export default function PatientDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Clinic Location Section */}
+        <Card className="mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-lg overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <MapPin className="w-6 h-6" />
+              Localisation de la Clinique
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {/* Map Section */}
+              <div className="h-80 lg:h-96">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3323.0234567890123!2d-4.99046!3d34.02646!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDAxJzM1LjIiTiA0wrA1OSczNi40Ilc!5e0!3m2!1sfr!2sma!4v1234567890123!5m2!1sfr!2sma"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Localisation de la clinique"
+                />
+              </div>
+
+              {/* Contact Information */}
+              <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Clinique Médicale Centrale</h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-800">Adresse</p>
+                      <p className="text-gray-600 text-sm">
+                      Rte de Sefrou, Fès 30000
+                        <br />
+                        Fès 30000, Maroc
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-800">Téléphone</p>
+                      <p className="text-gray-600 text-sm">0535641697</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-800">Email</p>
+                      <p className="text-gray-600 text-sm">support@polycliniqueatlas.ma.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-orange-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-800">Horaires d'ouverture</p>
+                      <div className="text-gray-600 text-sm space-y-1">
+                        <p>Lun - Ven: 8h00 - 18h00</p>
+                        <p>Samedi: 8h00 - 14h00</p>
+                        <p>Dimanche: Fermé</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <Button
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => window.open("https://maps.google.com/?q=34.02646,-4.99046", "_blank")}
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Itinéraire
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-transparent"
+                    onClick={() => window.open("tel:0535641697")}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Appeler
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
