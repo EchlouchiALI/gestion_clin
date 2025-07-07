@@ -8,6 +8,8 @@ import {
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Dossier } from '../dossiers/dossier.entity';
 import { Medecin } from 'src/medecins/medecin.entity';
+import { ChatMessage } from '../../chatbot/entities/chat-message.entity' // ✅ chemin relatif
+
 
 @Entity()
 export class User {
@@ -65,4 +67,7 @@ export class User {
 
   @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
   medecin: Medecin;
+  @OneToMany(() => ChatMessage, msg => msg.user)
+chatMessages: ChatMessage[]
+
 }

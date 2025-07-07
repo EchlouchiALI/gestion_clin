@@ -171,4 +171,5 @@ async getRendezvous(@Request() req) {
   getAllPatients() {
     return this.patientService.findAll();
   }
+  
 }

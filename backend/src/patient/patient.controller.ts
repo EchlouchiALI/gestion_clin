@@ -1,8 +1,12 @@
 import {
   Controller,
-  Delete,
   Get,
+  Post,
+  Put,
+  Delete,
   Param,
+  Body,
+  Req,
   Request,
   UseGuards,
   NotFoundException,
@@ -30,7 +34,7 @@ export class PatientController {
     private readonly userService: UsersService,
   ) {}
 
-  // 🔴 Accessible seulement au médecin
+  // 🔴 Supprimer un patient (côté médecin)
   @Delete('medecin/patients/:id')
   @Roles('medecin')
   async deletePatient(
@@ -47,10 +51,38 @@ export class PatientController {
     return { message: 'Patient supprimé' };
   }
 
-  // 🔵 Accessible au patient (QCM terminé ➜ afficher tous les médecins)
+  // 🔵 Liste des médecins (visible côté patient après QCM)
   @Get('patient/medecins')
   @Roles('patient')
   async getAllMedecins() {
     return this.userService.findAllMedecins();
+  }
+
+  // 🔵 Récupérer les infos du patient connecté
+  @Get('patient/profil')
+  @Roles('patient')
+  async getProfil(@Req() req: AuthenticatedRequest) {
+    return this.userService.findById(req.user.id);
+  }
+
+  // 🔵 Modifier les infos du patient connecté
+  @Put('patient/profil')
+  @Roles('patient')
+  async updateProfil(@Req() req: AuthenticatedRequest, @Body() body) {
+    return this.userService.update(req.user.id, body);
+  }
+
+  // 🔵 Modifier le mot de passe
+  @Post('patient/change-password')
+  @Roles('patient')
+  async changePassword(@Req() req: AuthenticatedRequest, @Body() body) {
+    return this.userService.updatePassword(req.user.id, body.newPassword);
+  }
+
+  // 🔴 Supprimer son compte (patient)
+  @Delete('patient/delete')
+  @Roles('patient')
+  async deleteAccount(@Req() req: AuthenticatedRequest) {
+    return this.userService.remove(req.user.id);
   }
 }

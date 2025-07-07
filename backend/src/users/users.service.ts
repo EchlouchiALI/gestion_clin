@@ -112,5 +112,29 @@ async findAllMedecins() {
     select: ['id', 'nom', 'prenom', 'specialite'], // ce que tu veux exposer
   })
 }
+async update(id: number, data: Partial<User>) {
+  const user = await this.userRepo.findOneBy({ id });
+  if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+  Object.assign(user, data);
+  return this.userRepo.save(user);
+}
+async updatePassword(id: number, newPassword: string) {
+  const user = await this.userRepo.findOneBy({ id });
+  if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  user.password = hashed;
+
+  await this.userRepo.save(user);
+  return { message: 'Mot de passe mis à jour' };
+}
+async remove(id: number) {
+  const user = await this.userRepo.findOneBy({ id });
+  if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+  await this.userRepo.delete(id);
+  return { message: 'Compte supprimé' };
+}
 
 }
