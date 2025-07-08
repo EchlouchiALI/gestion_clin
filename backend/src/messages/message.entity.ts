@@ -1,6 +1,10 @@
-// backend/src/messages/message.entity.ts
-
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm'
 import { User } from '../users/user.entity'
 
 @Entity()
@@ -22,4 +26,7 @@ export class Message {
 
   @ManyToOne(() => User)
   receiver: User
+
+  @Column({ default: false }) // ✅ champ manquant
+  isRequest: boolean
 }

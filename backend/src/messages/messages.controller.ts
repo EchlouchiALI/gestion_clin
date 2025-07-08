@@ -1,6 +1,4 @@
-// src/messages/messages.controller.ts
-
-import { Controller, Get, Post, Body, UseGuards, Request, Param } from '@nestjs/common'
+import { Controller, Get, Post, Body, UseGuards, Request, Param,Delete  } from '@nestjs/common'
 import { MessagesService } from './messages.service'
 import { CreateMessageDto } from './dto/create-message.dto'
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard'
@@ -8,20 +6,78 @@ import { RolesGuard } from 'src/common/guards/roles.guard'
 import { Roles } from 'src/common/decorators/roles.decorator'
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('patient')
-@Controller('patient/messages')
+@Controller()
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
-  @Post()
-  async sendMessage(@Body() dto: CreateMessageDto, @Request() req) {
+  // ============================
+  // 📩 ROUTES POUR LES PATIENTS
+  // ============================
+  @Post('patient/messages')
+  @Roles('patient')
+  async sendMessageAsPatient(@Body() dto: CreateMessageDto, @Request() req) {
     const user = req.user as any
     return this.messagesService.sendMessage(user, dto, 'patient')
   }
 
-  @Get(':medecinId')
-  async getConversation(@Param('medecinId') medecinId: number, @Request() req) {
+  @Get('patient/messages/:medecinId')
+  @Roles('patient')
+  async getConversationAsPatient(@Param('medecinId') medecinId: number, @Request() req) {
     const user = req.user as any
     return this.messagesService.getConversation(user.id, medecinId)
   }
+
+  @Post('patient/messages/demande')
+  @Roles('patient')
+  async envoyerDemande(@Body() body: { medecinId: number }, @Request() req) {
+    const patient = req.user as any
+    return this.messagesService.createDemande(patient.id, body.medecinId)
+  }
+
+  // =============================
+  // 🩺 ROUTES POUR LES MÉDECINS
+  // =============================
+  @Get('medecin/conversations')
+  @Roles('medecin')
+  async getConversationsMedecin(@Request() req) {
+    const medecin = req.user as any
+    return this.messagesService.getConversationsForMedecin(medecin.id)
+  }
+
+  @Get('medecin/conversations/:patientId')
+  @Roles('medecin')
+  async getMessagesWithPatient(@Param('patientId') patientId: number, @Request() req) {
+    const medecin = req.user as any
+    return this.messagesService.getConversation(patientId, medecin.id)
+  }
+
+  @Post('medecin/messages')
+  @Roles('medecin')
+  async sendMessageAsMedecin(@Body() dto: CreateMessageDto, @Request() req) {
+    const medecin = req.user as any
+    return this.messagesService.sendMessage(medecin, dto, 'medecin')
+  }
+
+  @Get('medecin/demandes')
+  @Roles('medecin')
+  async getDemandes(@Request() req) {
+    const medecin = req.user as any
+    return this.messagesService.getDemandesReçues(medecin.id)
+  }
+  async accepterDemande(@Request() req, @Body() body: { patientId: number }) {
+    const medecin = req.user as any
+    return this.messagesService.acceptDemande(medecin.id, body.patientId)
+  }
+  @Delete('messages/:id')
+  @Roles('medecin')
+async deleteMessage(@Param('id') id: number) {
+  return this.messagesService.deleteMessage(+id)
+}
+@Get('patient/medecins')
+@Roles('patient')
+async getMedecinsConversations(@Request() req) {
+  const patient = req.user as any
+  return this.messagesService.getConversationsForPatient(patient.id)
+}
+
 }

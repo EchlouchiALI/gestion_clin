@@ -68,7 +68,9 @@ export class AdminService {
   async getFullStats() {
     const totalPatients = await this.userRepo.count({ where: { role: 'patient' } });
     const totalMedecins = await this.userRepo.count({ where: { role: 'medecin' } });
+    const totalAdmins = await this.userRepo.count({ where: { role: 'admin' } });
     const totalUsers = await this.userRepo.count();
+    const totalAllUsers = totalPatients + totalMedecins + totalAdmins;
     const totalRdv = await this.rdvRepo.count();
 
     // ✅ Statistiques rendez-vous par jour de la semaine
@@ -89,28 +91,21 @@ export class AdminService {
     }
 
     // ✅ Évolution mensuelle patients/médecins
-    const evolution = await this.userRepo.query(`
+    const evolutionRaw = await this.userRepo.query(`
       SELECT
-        TO_CHAR(created_at, 'Mon') AS mois,
-        role,
-        COUNT(*) AS count
+      TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS mois,
+      SUM(CASE WHEN role = 'patient' THEN 1 ELSE 0 END) AS patients,
+      SUM(CASE WHEN role = 'medecin' THEN 1 ELSE 0 END) AS medecins
       FROM "user"
       WHERE role IN ('patient', 'medecin')
-      GROUP BY TO_CHAR(created_at, 'Mon'), role
-      ORDER BY MIN(created_at)
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY DATE_TRUNC('month', created_at)
     `);
 
-    const evoMap: Record<string, { patients: number, medecins: number }> = {};
-    for (const row of evolution) {
-      const mois = row.mois;
-      if (!evoMap[mois]) evoMap[mois] = { patients: 0, medecins: 0 };
-      if (row.role === 'patient') evoMap[mois].patients = +row.count;
-      if (row.role === 'medecin') evoMap[mois].medecins = +row.count;
-    }
-
-    const evolutionData = Object.entries(evoMap).map(([mois, data]) => ({
-      mois,
-      ...data,
+    const evolutionData = evolutionRaw.map((row) => ({
+      mois: row.mois,
+      patients: +row.patients,
+      medecins: +row.medecins,
     }));
 
     // ✅ Répartition des spécialités
@@ -131,6 +126,8 @@ export class AdminService {
       totalPatients,
       totalMedecins,
       totalRdv,
+      totalAdmins,
+      totalAllUsers,
       rdvDetails: rdvCountByDay,
       evolution: evolutionData,
       specialites,

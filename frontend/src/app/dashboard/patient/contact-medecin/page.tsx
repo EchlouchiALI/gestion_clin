@@ -1,134 +1,104 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { API_URL } from '@/lib/config'
+import { useEffect, useState } from "react"
+import axios from "axios"
+import { Button } from "@/components/ui/button"
 
-type Message = {
+type Medecin = {
   id: number
-  content: string
-  senderRole: 'patient' | 'medecin'
-  createdAt: string
-  sender: {
-    id: number
-    prenom: string
-    nom: string
-  }
+  nom: string
+  prenom: string
+  specialite: string
 }
 
-export default function Page() {
-    const [medecinId, setMedecinId] = useState<number | null>(null)// ID fixe ou à rendre dynamique
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+type Conversation = {
+  id: number
+  medecinId: number
+  status: 'pending' | 'accepted' | 'rejected'
+}
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const fetchMedecin = async () => {
-    if (!token) return
-    try {
-      const res = await fetch(`${API_URL}/patient/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setMedecinId(data.medecin?.id ?? null)
-      }
-    } catch (err) {
-      console.error('Erreur chargement medecin', err)
-    }
-  }
+export default function ContactMedecinPage() {
+  const [medecins, setMedecins] = useState<Medecin[]>([])
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const fetchMessages = async () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null
 
-    try {
-      setLoading(true)
-      if (!medecinId) return
-      const res = await fetch(`${API_URL}/patient/messages/${medecinId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      setMessages(data)
-    } catch (error) {
-      console.error('Erreur chargement messages:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return
-
-    try {
-        const res = await fetch(`${API_URL}/patient/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: newMessage,
-          receiverId: medecinId,
-        }),
-      })
-
-      if (res.ok) {
-        setNewMessage('')
-        fetchMessages()
-      }
-    } catch (error) {
-      console.error('Erreur envoi message:', error)
-    }
-  }
-
+  // 🔄 Charger les médecins et les conversations du patient
   useEffect(() => {
-    fetchMedecin()
+    const fetchData = async () => {
+      try {
+        const resMed = await axios.get("http://localhost:3001/patient/medecins", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const resConv = await axios.get("http://localhost:3001/patient/conversations", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setMedecins(resMed.data)
+        setConversations(resConv.data)
+      } catch (err) {
+        console.error("Erreur de chargement :", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
   }, [])
 
-  useEffect(() => {
-    if (medecinId) fetchMessages()
-  }, [medecinId])
+  // 📩 Demander une conversation
+  const handleDemandeConversation = async (medecinId: number) => {
+    try {
+      await axios.post("http://localhost:3001/patient/conversations", {
+        medecinId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      alert("Demande envoyée !")
+      window.location.reload()
+    } catch (err) {
+      console.error("Erreur en envoyant la demande :", err)
+      alert("Erreur lors de la demande.")
+    }
+  }
+
+  // 📍 Vérifie si une conversation existe déjà
+  const getConversationStatus = (medecinId: number) => {
+    const conv = conversations.find(c => c.medecinId === medecinId)
+    if (!conv) return "Aucune"
+    if (conv.status === "pending") return "En attente"
+    if (conv.status === "accepted") return "Acceptée"
+    if (conv.status === "rejected") return "Refusée"
+  }
+
+  if (loading) return <p>Chargement...</p>
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">💬 Contacter mon médecin</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-xl font-bold">Contacter un médecin</h1>
 
-      <div className="border rounded-lg p-4 h-[400px] overflow-y-auto bg-gray-50 mb-4">
-        {loading ? (
-          <p>Chargement des messages...</p>
-        ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`mb-2 max-w-[75%] ${
-                msg.senderRole === 'patient' ? 'ml-auto text-right' : 'mr-auto text-left'
-              }`}
+      {medecins.map((medecin) => (
+        <div key={medecin.id} className="border p-4 rounded shadow">
+          <p><strong>Dr. {medecin.nom} {medecin.prenom}</strong></p>
+          <p>Spécialité : {medecin.specialite}</p>
+          <p>Statut : {getConversationStatus(medecin.id)}</p>
+
+          {getConversationStatus(medecin.id) === "Aucune" && (
+            <Button onClick={() => handleDemandeConversation(medecin.id)}>
+              Demander une conversation
+            </Button>
+          )}
+
+          {getConversationStatus(medecin.id) === "Acceptée" && (
+            <Button
+              onClick={() => window.location.href = `/dashboard/patient/chat/${medecin.id}`}
             >
-              <div
-                className={`inline-block px-4 py-2 rounded-lg ${
-                  msg.senderRole === 'patient' ? 'bg-blue-200' : 'bg-gray-300'
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(msg.createdAt).toLocaleString()}
-              </p>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <Textarea
-          placeholder="Écrivez votre message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          className="flex-1"
-        />
-        <Button onClick={sendMessage}>Envoyer</Button>
-      </div>
+              Ouvrir le chat
+            </Button>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

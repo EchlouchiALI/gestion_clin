@@ -20,7 +20,7 @@ import { OrdonnancesModule } from './ordonnances/ordonnances.module';
 import { MessagesModule } from './messages/messages.module';
 import { ActivityModule } from './activity/activity.module';
 import { ChatbotModule } from '../chatbot/chatbot.module'
-
+import { ChatModule } from './chat/chat.module';
 
 // 🔐 Garde de rôles
 import { RolesGuard } from './common/guards/roles.guard';
@@ -79,6 +79,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     MessagesModule,
     ActivityModule,
     ChatbotModule,
+    ChatModule,
 
     ScheduleModule.forRoot(),
   ],

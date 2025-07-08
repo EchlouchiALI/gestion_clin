@@ -194,7 +194,7 @@ export default function PatientDashboardPage() {
 
               {/* Contact Information */}
               <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Clinique Médicale Centrale</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Polyclinique Atlas</h3>
 
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">

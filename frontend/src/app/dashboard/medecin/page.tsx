@@ -37,7 +37,7 @@ export interface Activity {
   id: number;
   type: string;
   description: string;
-  date: string; // ou Date, selon ce que tu préfères
+  createdAt: string; // ou Date, selon ce que tu préfères
   // ajoute les autres champs nécessaires
 }
 
@@ -382,7 +382,7 @@ export default function DashboardMedecinPage() {
         <p className="text-sm text-gray-600">{rdvItem.motif}</p>
       </div>
       <div className="text-right">
-        <p className="font-medium text-blue-600">{new Date(rdvItem.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+      <p className="font-medium text-blue-600">{rdvItem.heure}</p>
       </div>
     </div>
   ))}
@@ -412,7 +412,7 @@ export default function DashboardMedecinPage() {
         <p className="text-sm font-medium text-gray-900">
           {activity.type} - {activity.description}
         </p>
-        <p className="text-xs text-gray-500">{timeAgo(activity.date)}</p>
+        <p className="text-xs text-gray-500">{timeAgo(activity.createdAt)}</p>
       </div>
     </div>
   ))}
