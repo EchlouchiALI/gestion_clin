@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
@@ -31,13 +33,7 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts'
-
-
-
-
-// Fallback stats when no auth token is present (preview / demo mode)
-
+} from "recharts"
 
 interface Stats {
   totalUsers: number
@@ -46,11 +42,10 @@ interface Stats {
   totalRdv: number
   rdvToday?: number
   rdvThisWeek?: number
-  totalAllUsers: number;
-  rdvDetails?: { name: string; rdv: number }[];
-  evolution?: { mois: string; patients: number; medecins: number }[];
-  specialites?: { name: string; value: number }[];
-  
+  totalAllUsers: number
+  rdvDetails?: { name: string; rdv: number }[]
+  evolution?: { mois: string; patients: number; medecins: number }[]
+  specialites?: { name: string; value: number }[]
 }
 
 export default function AdminDashboard() {
@@ -59,38 +54,23 @@ export default function AdminDashboard() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [rdvParJour, setRdvParJour] = useState<{ name: string; rdv: number }[]>([])
-  const [evolutionData, setEvolutionData] = useState<{ mois: string; patients: number; medecins: number }[]>([])
-  const [specialiteData, setSpecialiteData] = useState<{ name: string; value: number }[]>([])
-
-
 
   const fetchStats = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true)
       else setLoading(true)
-  
+
       const token = localStorage.getItem("token")
-      if (!token) return
-  
+      if (!token) {
+        setError("Token d'authentification manquant")
+        return
+      }
+
       const res = await axios.get("http://localhost:3001/admin/stats", {
         headers: { Authorization: `Bearer ${token}` },
       })
-  
+
       setStats(res.data)
-  
-      // 📅 Données des rendez-vous par jour
-      if (res.data.rdvDetails) {
-       
-        setRdvParJour(res.data.rdvDetails)
-      } else {
-        setRdvParJour([])
-      }
-  
-      // 📈 Ajout des données pour LineChart et PieChart
-      setEvolutionData(res.data.evolution || [])
-      setSpecialiteData(res.data.specialites || [])
-  
       setError("")
     } catch (err: any) {
       console.error("Erreur lors du chargement des statistiques:", err)
@@ -105,8 +85,6 @@ export default function AdminDashboard() {
       setRefreshing(false)
     }
   }
-  
-  
 
   useEffect(() => {
     fetchStats()
@@ -119,21 +97,15 @@ export default function AdminDashboard() {
   }
 
   const handleRefresh = () => {
-    window.location.reload();
-  };
+    fetchStats(true)
+  }
+
   // Navigation handlers
-  const handleNavigateToPatients = () => {
-    router.push("/dashboard/admin/patients")
-  }
+  const handleNavigateToPatients = () => router.push("/dashboard/admin/patients")
+  const handleNavigateToMedecins = () => router.push("/dashboard/admin/medecin")
+  const handleNavigateToRendezVous = () => router.push("/dashboard/admin/rendezvous")
 
-  const handleNavigateToMedecins = () => {
-    router.push("/dashboard/admin/medecin")
-  }
-
-  const handleNavigateToRendezVous = () => {
-    router.push("/dashboard/admin/rendezvous")
-  }
-
+  // Composant StatCard
   const StatCard = ({
     icon: Icon,
     label,
@@ -152,68 +124,93 @@ export default function AdminDashboard() {
     clickable?: boolean
   }) => (
     <Card
-      className={`bg-gradient-to-br from-white/10 to-white/5 border-white/20 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 ${
-        clickable ? "cursor-pointer hover:from-white/15 hover:to-white/10" : ""
-      }`}
+      className={`
+        group relative overflow-hidden border-0 bg-white shadow-lg hover:shadow-xl 
+        transition-all duration-300 hover:-translate-y-1
+        ${clickable ? "cursor-pointer hover:shadow-2xl" : ""}
+      `}
       onClick={onClick}
     >
-      <CardContent className="p-6">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50" />
+      <CardContent className="relative p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl shadow-lg">
-              <Icon className="w-6 h-6 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+              <Icon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <div className="text-3xl font-bold">
-                {typeof value === "number" ? value.toLocaleString() : '...'}
+              <div className="text-2xl font-bold text-gray-900">
+                {typeof value === "number" ? value.toLocaleString() : "..."}
               </div>
-              <div className="text-sm text-slate-300">{label}</div>
+              <div className="text-sm font-medium text-gray-600">{label}</div>
             </div>
           </div>
           <div className="flex flex-col items-end space-y-2">
             {trend && trendValue && (
               <div
-                className={`flex items-center space-x-1 text-sm ${trend === "up" ? "text-green-400" : "text-red-400"}`}
+                className={`flex items-center space-x-1 text-sm font-medium ${
+                  trend === "up" ? "text-green-600" : "text-red-600"
+                }`}
               >
-                <TrendingUp className={`w-4 h-4 ${trend === "down" ? "rotate-180" : ""}`} />
+                <TrendingUp className={`h-4 w-4 ${trend === "down" ? "rotate-180" : ""}`} />
                 <span>{trendValue}</span>
               </div>
             )}
-            {clickable && <ArrowRight className="w-4 h-4 text-slate-400" />}
+            {clickable && (
+              <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1" />
+            )}
           </div>
         </div>
       </CardContent>
     </Card>
   )
-  
 
+  // Composant StatCardSkeleton
   const StatCardSkeleton = () => (
-    <Card className="bg-gradient-to-br from-white/10 to-white/5 border-white/20">
+    <Card className="border-0 bg-white shadow-lg">
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">
-          <Skeleton className="w-12 h-12 rounded-xl bg-white/20" />
+          <Skeleton className="h-12 w-12 rounded-xl" />
           <div className="space-y-2">
-            <Skeleton className="h-8 w-16 bg-white/20" />
-            <Skeleton className="h-4 w-24 bg-white/20" />
+            <Skeleton className="h-6 w-16" />
+            <Skeleton className="h-4 w-24" />
           </div>
         </div>
+      </CardContent>
+    </Card>
+  )
+
+  // Composant ChartCard
+  const ChartCard = ({
+    title,
+    children,
+    className = "",
+  }: {
+    title: string
+    children: React.ReactNode
+    className?: string
+  }) => (
+    <Card className={`border-0 bg-white shadow-lg ${className}`}>
+      <CardContent className="p-6">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">{title}</h3>
+        {children}
       </CardContent>
     </Card>
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white/5 border-b border-white/10 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
+      <header className="border-b border-white/20 bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
-                <Activity className="w-6 h-6 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
+                <Activity className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">Tableau de bord</h1>
-                <p className="text-slate-300">Administration du système médical</p>
+                <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+                <p className="text-sm text-gray-600">Administration du système médical</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -221,35 +218,34 @@ export default function AdminDashboard() {
                 variant="outline"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="px-3 py-1 text-sm bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 Actualiser
               </Button>
-
               <Button
                 variant="outline"
                 onClick={handleLogout}
-                className="px-3 py-1 text-sm bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30 hover:text-red-200"
+                className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="mr-2 h-4 w-4" />
                 Déconnexion
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-8">
+      <main className="mx-auto max-w-7xl p-6">
         {error && (
-          <Alert className="mb-6 bg-red-500/10 border-red-500/30 text-red-300">
+          <Alert className="mb-6 border-red-200 bg-red-50 text-red-800">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {loading ? (
             <>
               <StatCardSkeleton />
@@ -264,14 +260,14 @@ export default function AdminDashboard() {
                 label="Utilisateurs totaux"
                 value={stats.totalAllUsers}
                 trend="up"
-                
+                trendValue=""
               />
               <StatCard
                 icon={UserPlus}
                 label="Patients"
                 value={stats.totalPatients}
                 trend="up"
-                
+                trendValue=""
                 onClick={handleNavigateToPatients}
                 clickable={true}
               />
@@ -280,7 +276,7 @@ export default function AdminDashboard() {
                 label="Médecins"
                 value={stats.totalMedecins}
                 trend="up"
-                
+                trendValue=""
                 onClick={handleNavigateToMedecins}
                 clickable={true}
               />
@@ -289,73 +285,118 @@ export default function AdminDashboard() {
                 label="Rendez-vous"
                 value={stats.totalRdv}
                 trend="up"
-                
+                trendValue=""
                 onClick={handleNavigateToRendezVous}
                 clickable={true}
               />
             </>
           ) : null}
         </div>
-        {/* Graphiques */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
 
-{/* 📊 BarChart des rendez-vous par jour */}
-<div className="bg-white/10 p-6 rounded-lg shadow-lg text-white">
-  <h2 className="text-xl font-bold mb-4">Rendez-vous par jour</h2>
-  <ResponsiveContainer width="100%" height={300}>
-    <BarChart data={rdvParJour}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" />
-      <XAxis dataKey="name" stroke="#fff" />
-      <YAxis stroke="#fff" />
-      <Tooltip />
-      <Bar dataKey="rdv" fill="#8884d8" />
-    </BarChart>
-  </ResponsiveContainer>
-</div>
+        {/* Charts */}
+        {!loading && stats && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Bar Chart */}
+            <ChartCard title="Rendez-vous par jour">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.rdvDetails || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                  />
+                  <Bar dataKey="rdv" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#1d4ed8" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
 
-{/* 📈 LineChart de l’évolution mensuelle */}
-<div className="bg-white/10 p-6 rounded-lg shadow-lg text-white">
-  <h2 className="text-xl font-bold mb-4">Évolution mensuelle</h2>
-  <ResponsiveContainer width="100%" height={300}>
-    <LineChart data={evolutionData}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" />
-      <XAxis dataKey="mois" stroke="#fff" />
-      <YAxis stroke="#fff" />
-      <Tooltip />
-      <Line type="monotone" dataKey="patients" stroke="#8884d8" />
-      <Line type="monotone" dataKey="medecins" stroke="#82ca9d" />
-    </LineChart>
-  </ResponsiveContainer>
-</div>
+            {/* Line Chart */}
+            <ChartCard title="Évolution mensuelle">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={stats.evolution || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="mois" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="patients"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="medecins"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
 
-{/* 🥧 PieChart des spécialités */}
-<div className="col-span-1 md:col-span-2 bg-white/10 p-6 rounded-lg shadow-lg text-white">
-  <h2 className="text-xl font-bold mb-4">Répartition des spécialités</h2>
-  <ResponsiveContainer width="100%" height={300}>
-    <PieChart>
-      <Pie
-        data={specialiteData}
-        dataKey="value"
-        nameKey="name"
-        cx="50%"
-        cy="50%"
-        outerRadius={100}
-        label
-      >
-        {specialiteData.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={`hsl(${(index * 60) % 360}, 70%, 50%)`} />
-        ))}
-      </Pie>
-      <Tooltip />
-    </PieChart>
-  </ResponsiveContainer>
-</div>
-
-</div>
-
-      </div>
+            {/* Pie Chart */}
+            <ChartCard title="Répartition des spécialités" className="lg:col-span-2">
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={stats.specialites || []}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={120}
+                    innerRadius={60}
+                    paddingAngle={2}
+                    label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                  >
+                    {(stats.specialites || []).map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#84cc16", "#f97316"][
+                            index % 8
+                          ]
+                        }
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+        )}
+      </main>
     </div>
   )
-  
-
 }
