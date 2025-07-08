@@ -74,12 +74,15 @@ export class AdminService {
     // ✅ Statistiques rendez-vous par jour de la semaine
     const rdvs = await this.rdvRepo.find();
     const joursSemaines = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    const rdvCountByDay = joursSemaines.map(jour => ({ name: jour, rdv: 0 }));
+    const rdvCountByDay = joursSemaines.map((jour) => ({ name: jour, rdv: 0 }));
 
     for (const rdv of rdvs) {
       const fullDate = new Date(`${rdv.date}T${rdv.heure}`);
-      const jour = fullDate.toLocaleDateString('fr-FR', { weekday: 'short' });
-      const index = rdvCountByDay.findIndex(j => j.name === jour);
+      let jour = fullDate.toLocaleDateString('fr-FR', { weekday: 'short' });
+      jour = jour.replace('.', '');
+      jour = jour.charAt(0).toUpperCase() + jour.slice(1);
+
+      const index = rdvCountByDay.findIndex((j) => j.name === jour);
       if (index !== -1) {
         rdvCountByDay[index].rdv += 1;
       }

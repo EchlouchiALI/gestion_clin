@@ -47,6 +47,9 @@ interface Stats {
   rdvToday?: number
   rdvThisWeek?: number
   totalAllUsers: number;
+  rdvDetails?: { name: string; rdv: number }[];
+  evolution?: { mois: string; patients: number; medecins: number }[];
+  specialites?: { name: string; value: number }[];
   
 }
 
@@ -76,17 +79,10 @@ export default function AdminDashboard() {
   
       setStats(res.data)
   
-      // 📅 Transformation des rendez-vous par jour
+      // 📅 Données des rendez-vous par jour
       if (res.data.rdvDetails) {
-        const jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-        const counts = jours.map((jour) => {
-          const count = res.data.rdvDetails.filter((rdv: any) => {
-            const date = new Date(rdv.dateRdv)
-            return date.toLocaleDateString("fr-FR", { weekday: "short" }) === jour
-          }).length
-          return { name: jour, rdv: count }
-        })
-        setRdvParJour(counts)
+       
+        setRdvParJour(res.data.rdvDetails)
       } else {
         setRdvParJour([])
       }
