@@ -39,10 +39,11 @@ export class MessagesService {
       content: 'Demande de conversation',
       senderRole: 'patient',
       isRequest: true,
-    });
+    })
 
-    return this.messageRepo.save(message);
+    return this.messageRepo.save(message)
   }
+
   async getDemandesReçues(medecinId: number) {
     return this.messageRepo.find({
       where: {
@@ -53,6 +54,7 @@ export class MessagesService {
       order: { createdAt: 'DESC' },
     })
   }
+
   async getConversationsForMedecin(medecinId: number) {
     const messages = await this.messageRepo.find({
       where: [
@@ -61,22 +63,21 @@ export class MessagesService {
       ],
       relations: ['sender', 'receiver'],
       order: { createdAt: 'DESC' },
-    });
-  
-    const conversationsMap = new Map<number, User>();
-  
+    })
+
+    const conversationsMap = new Map<number, User>()
+
     for (const message of messages) {
-      const user =
-        message.sender.id === medecinId ? message.receiver : message.sender;
+      const user = message.sender.id === medecinId ? message.receiver : message.sender
       if (user.role === 'patient' && !conversationsMap.has(user.id)) {
-        conversationsMap.set(user.id, user);
+        conversationsMap.set(user.id, user)
       }
     }
-  
-    return Array.from(conversationsMap.values());
+
+    return Array.from(conversationsMap.values())
   }
+
   async acceptDemande(medecinId: number, patientId: number) {
-    // Convertir la demande en message normal
     const message = this.messageRepo.create({
       sender: { id: medecinId },
       receiver: { id: patientId },
@@ -86,10 +87,11 @@ export class MessagesService {
     })
     return this.messageRepo.save(message)
   }
+
   async deleteMessage(id: number) {
     return this.messageRepo.delete(id)
   }
-  
+
   async getConversationsForPatient(patientId: number) {
     const messages = await this.messageRepo.find({
       where: [
@@ -98,19 +100,17 @@ export class MessagesService {
       ],
       relations: ['sender', 'receiver'],
       order: { createdAt: 'DESC' },
-    });
-  
-    const medecinsMap = new Map<number, User>();
-  
+    })
+
+    const medecinsMap = new Map<number, User>()
+
     for (const message of messages) {
-      const user =
-        message.sender.id === patientId ? message.receiver : message.sender;
+      const user = message.sender.id === patientId ? message.receiver : message.sender
       if (user.role === 'medecin' && !medecinsMap.has(user.id)) {
-        medecinsMap.set(user.id, user);
+        medecinsMap.set(user.id, user)
       }
     }
-  
-    return Array.from(medecinsMap.values());
+
+    return Array.from(medecinsMap.values())
   }
-  
 }
