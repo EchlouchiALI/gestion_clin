@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+
 import {
   Heart,
   Palette,
@@ -53,6 +54,14 @@ type Rendezvous = {
   heure: string
   medecin: Medecin
 }
+declare global {
+  interface Window {
+    SpeechRecognition: any
+    webkitSpeechRecognition: any
+    startVoiceCommand: () => void
+  }
+}
+
 
 export default function PagePrendreRdv() {
   const [answers, setAnswers] = useState<{ [key: number]: string }>({})
@@ -188,7 +197,70 @@ export default function PagePrendreRdv() {
       alert("❌ Erreur lors de la suppression.")
     }
   }
-
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
+      return;
+    }
+  
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'fr-FR';
+    recognition.interimResults = false;
+  
+    let isRecognizing = false;
+  
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      console.log("🎙️ Texte reconnu :", transcript);
+  
+      const match = transcript.match(/docteur (\w+).*?(\d{1,2} \w+).*?(\d{1,2}) ?h/);
+  
+      if (match) {
+        const nomMedecin = match[1];
+        const dateStr = match[2];
+        const heureStr = match[3];
+  
+        const medecin = medecins.find(m => m.nom.toLowerCase().includes(nomMedecin));
+        if (medecin) {
+          setSelectedMedecin(medecin.id);
+        } else {
+          alert("Médecin non trouvé.");
+        }
+  
+        const mois = {
+          janvier: "01", février: "02", mars: "03", avril: "04", mai: "05", juin: "06",
+          juillet: "07", août: "08", septembre: "09", octobre: "10", novembre: "11", décembre: "12"
+        };
+  
+        const [jour, moisParle] = dateStr.split(" ");
+        const moisNum = mois[moisParle as keyof typeof mois];
+        const year = new Date().getFullYear();
+  
+        if (moisNum) {
+          setDate(`${year}-${moisNum}-${jour.padStart(2, "0")}`);
+        }
+  
+        setHeure(`${heureStr.padStart(2, "0")}:00`);
+      } else {
+        alert("Je n'ai pas compris. Essayez : Docteur Khalil le 12 juillet à 14h");
+      }
+    };
+  
+    recognition.onend = () => {
+      isRecognizing = false;
+    };
+  
+    (window as any).startVoiceCommand = () => {
+      if (isRecognizing) {
+        console.warn("🎧 Déjà en cours d'écoute.");
+        return;
+      }
+      isRecognizing = true;
+      recognition.start();
+    };
+  }, [medecins]);
+  
   const generatePDF = async (rdv: Rendezvous) => {
     const doc = new jsPDF()
     const qrData = `Rendez-vous avec Dr. ${rdv.medecin.nom} ${rdv.medecin.prenom} - ${rdv.date} à ${rdv.heure}`
@@ -276,7 +348,15 @@ export default function PagePrendreRdv() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
+              
             )}
+            <Button
+  onClick={() => (window as any).startVoiceCommand()}
+  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold shadow-md"
+>
+  🎤 Parler pour remplir automatiquement
+</Button>
+
 
             {/* Questionnaire */}
             {currentStep === "questionnaire" && (
