@@ -86,12 +86,19 @@ export class UsersService {
 
   // ✅ ✅ Méthode propre pour liste des médecins
   async findAllMedecins() {
-    return this.userRepo.find({
+    const medecins = await this.userRepo.find({
       where: { role: 'medecin' },
       order: { nom: 'ASC' },
       select: ['id', 'nom', 'prenom', 'specialite'],
     })
+  
+    // Ajout du champ nomComplet dynamiquement
+    return medecins.map((m) => ({
+      ...m,
+      nomComplet: `Dr ${m.nom} ${m.prenom}`,
+    }))
   }
+  
 
   // ✅ Mise à jour générique
   async update(id: number, data: Partial<User>) {
