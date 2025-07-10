@@ -7,7 +7,7 @@ import {
 } from 'typeorm'
 import { User } from '../users/user.entity'
 
-@Entity()
+@Entity() // ✅ OBLIGATOIRE pour TypeORM
 export class Message {
   @PrimaryGeneratedColumn()
   id: number
@@ -27,6 +27,6 @@ export class Message {
   @ManyToOne(() => User)
   receiver: User
 
-  @Column({ default: false }) // ✅ champ manquant
+  @Column({ default: false })
   isRequest: boolean
 }

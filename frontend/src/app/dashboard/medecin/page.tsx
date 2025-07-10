@@ -182,6 +182,13 @@ export default function DashboardMedecinPage() {
       color: "from-purple-500 to-purple-600",
       onClick: () => router.push("/dashboard/medecin/ordonnances"),
     },
+    {
+      title: "Contact medecin",
+      description: "contact votre medecin",
+      icon: FileText,
+      color: "from-purple-500 to-purple-600",
+      onClick: () => router.push("/dashboard/medecin/conversations"),
+    },
   ]
 
   const statsCards = [

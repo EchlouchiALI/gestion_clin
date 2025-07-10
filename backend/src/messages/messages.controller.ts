@@ -105,4 +105,18 @@ export class MessagesController {
   async deleteMessage(@Param('id') id: number) {
     return this.messagesService.deleteMessage(+id)
   }
+  @Get('patient/demandes')
+@Roles('patient')
+async getDemandesEnvoyees(@Request() req) {
+  const patient = req.user as any
+  return this.messagesService.getDemandesEnvoyeesParPatient(patient.id)
+}
+@Post('medecin/demandes/refuse')
+@Roles('medecin')
+async refuserDemande(@Request() req, @Body() body: { patientId: number }) {
+  const medecin = req.user as any
+  return this.messagesService.refuserDemande(medecin.id, body.patientId)
+}
+
+
 }

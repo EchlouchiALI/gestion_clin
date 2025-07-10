@@ -1,12 +1,24 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
-import { Trash2, Calendar, Search, Clock, User, Stethoscope, FileText, Plus, Filter, Edit } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import {
+  Trash2,
+  CalendarIcon,
+  Search,
+  Clock,
+  User,
+  Stethoscope,
+  FileText,
+  Plus,
+  Filter,
+  Edit,
+  ArrowLeft,
+} from "lucide-react"
 import { toast } from "sonner"
 
 interface Patient {
@@ -34,6 +46,7 @@ interface RendezVous {
 }
 
 export default function AdminRendezVousPage() {
+  const router = useRouter()
   const [rendezvousList, setRendezvousList] = useState<RendezVous[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
   const [medecins, setMedecins] = useState<Medecin[]>([])
@@ -41,23 +54,34 @@ export default function AdminRendezVousPage() {
   const [statutFilter, setStatutFilter] = useState<"all" | "à venir" | "passé" | "annulé">("all")
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date>()
+  const [selectedTime, setSelectedTime] = useState("")
   const [formData, setFormData] = useState({
     patientId: "",
     medecinId: "",
-    date: "",
-    heure: "",
     motif: "",
   })
-
   const [showEditForm, setShowEditForm] = useState(false)
   const [editingRdv, setEditingRdv] = useState<RendezVous | null>(null)
+  const [editSelectedDate, setEditSelectedDate] = useState<Date>()
+  const [editSelectedTime, setEditSelectedTime] = useState("")
   const [editFormData, setEditFormData] = useState({
     patientId: "",
     medecinId: "",
-    date: "",
-    heure: "",
     motif: "",
   })
+
+  // Générer les créneaux horaires de 8h à 18h par intervalles de 30 minutes
+  const generateTimeSlots = () => {
+    const slots = []
+    for (let hour = 8; hour < 18; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, "0")}:30`)
+    }
+    return slots
+  }
+
+  const timeSlots = generateTimeSlots()
 
   const fetchRendezvous = async () => {
     try {
@@ -66,8 +90,7 @@ export default function AdminRendezVousPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const sorted = res.data.sort(
-        (a: RendezVous, b: RendezVous) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a: RendezVous, b: RendezVous) => new Date(b.date).getTime() - new Date(a.date).getTime(),
       )
       setRendezvousList(sorted)
     } catch (err) {
@@ -77,21 +100,20 @@ export default function AdminRendezVousPage() {
       setLoading(false)
     }
   }
-  
+
   const fetchPatients = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")
       const res = await axios.get("http://localhost:3001/admin/patients", {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      setPatients(res.data);
+      })
+      setPatients(res.data)
     } catch (err) {
-      console.error("Erreur chargement patients", err);
-      toast.error("Impossible de charger les patients");
+      console.error("Erreur chargement patients", err)
+      toast.error("Impossible de charger les patients")
     }
-  };
-  
-  
+  }
+
   const fetchMedecins = async () => {
     try {
       const token = localStorage.getItem("token")
@@ -104,7 +126,7 @@ export default function AdminRendezVousPage() {
       toast.error("Erreur chargement médecins")
     }
   }
-  
+
   const deleteRendezvous = async (id: number) => {
     if (!confirm("Supprimer ce rendez-vous ?")) return
     try {
@@ -119,9 +141,15 @@ export default function AdminRendezVousPage() {
       toast.error("Erreur lors de la suppression")
     }
   }
-  
+
   const handleAddRendezVous = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!selectedDate || !selectedTime) {
+      toast.error("Veuillez sélectionner une date et une heure")
+      return
+    }
+
     try {
       const token = localStorage.getItem("token")
       await axios.post(
@@ -129,28 +157,30 @@ export default function AdminRendezVousPage() {
         {
           patientId: Number.parseInt(formData.patientId),
           medecinId: Number.parseInt(formData.medecinId),
-          date: formData.date,
-          heure: formData.heure,
+          date: selectedDate ? selectedDate.toISOString().split("T")[0] : "",
+          heure: selectedTime,
           motif: formData.motif,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       )
       toast.success("Rendez-vous ajouté avec succès")
       setShowAddForm(false)
-      setFormData({ patientId: "", medecinId: "", date: "", heure: "", motif: "" })
+      setFormData({ patientId: "", medecinId: "", motif: "" })
+      setSelectedDate(undefined)
+      setSelectedTime("")
       fetchRendezvous()
     } catch (err) {
       console.error("Erreur ajout rendez-vous :", err)
       toast.error("Erreur lors de l'ajout du rendez-vous")
     }
   }
-  
+
   const handleEditRendezVous = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingRdv) return
-  
+    if (!editingRdv || !editSelectedDate || !editSelectedTime) return
+
     try {
       const token = localStorage.getItem("token")
       await axios.patch(
@@ -158,44 +188,50 @@ export default function AdminRendezVousPage() {
         {
           patientId: Number.parseInt(editFormData.patientId),
           medecinId: Number.parseInt(editFormData.medecinId),
-          date: editFormData.date,
-          heure: editFormData.heure,
+          date: editSelectedDate ? editSelectedDate.toISOString().split("T")[0] : "",
+          heure: editSelectedTime,
           motif: editFormData.motif,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       )
       toast.success("Rendez-vous modifié avec succès")
       setShowEditForm(false)
       setEditingRdv(null)
-      setEditFormData({ patientId: "", medecinId: "", date: "", heure: "", motif: "" })
+      setEditFormData({ patientId: "", medecinId: "", motif: "" })
+      setEditSelectedDate(undefined)
+      setEditSelectedTime("")
       fetchRendezvous()
     } catch (err) {
       console.error("Erreur modification rendez-vous :", err)
       toast.error("Erreur lors de la modification du rendez-vous")
     }
   }
-  
-  
 
   const openEditForm = (rdv: RendezVous) => {
     setEditingRdv(rdv)
     setEditFormData({
       patientId: rdv.patient.id?.toString() || "",
       medecinId: rdv.medecin.id?.toString() || "",
-      date: rdv.date,
-      heure: rdv.heure,
       motif: rdv.motif,
     })
+    setEditSelectedDate(new Date(rdv.date))
+    setEditSelectedTime(rdv.heure)
     setShowEditForm(true)
-    setShowAddForm(false) // Fermer le formulaire d'ajout si ouvert
+    setShowAddForm(false)
   }
 
   const cancelEdit = () => {
     setShowEditForm(false)
     setEditingRdv(null)
-    setEditFormData({ patientId: "", medecinId: "", date: "", heure: "", motif: "" })
+    setEditFormData({ patientId: "", medecinId: "", motif: "" })
+    setEditSelectedDate(undefined)
+    setEditSelectedTime("")
+  }
+
+  const handleGoBack = () => {
+    router.back()
   }
 
   useEffect(() => {
@@ -215,7 +251,6 @@ export default function AdminRendezVousPage() {
     total: rendezvousList.length,
     avenir: rendezvousList.filter((r) => r.statut === "à venir").length,
     passe: rendezvousList.filter((r) => r.statut === "passé").length,
-    
   }
 
   const getStatutBadge = (statut: string) => {
@@ -224,7 +259,6 @@ export default function AdminRendezVousPage() {
         return "bg-green-500 text-white"
       case "passé":
         return "bg-gray-500 text-white"
-      
       default:
         return "bg-gray-500 text-white"
     }
@@ -232,7 +266,19 @@ export default function AdminRendezVousPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header simple */}
+      {/* Barre de retour */}
+      <div className="mb-4">
+        <Button
+          onClick={handleGoBack}
+          variant="ghost"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour
+        </Button>
+      </div>
+
+      {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
@@ -254,7 +300,7 @@ export default function AdminRendezVousPage() {
         </div>
       </div>
 
-      {/* Statistiques simples */}
+      {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
@@ -262,7 +308,7 @@ export default function AdminRendezVousPage() {
               <p className="text-sm text-gray-600">Total</p>
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
-            <Calendar className="w-8 h-8 text-blue-500" />
+            <CalendarIcon className="w-8 h-8 text-blue-500" />
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
@@ -285,74 +331,88 @@ export default function AdminRendezVousPage() {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
           <div className="flex items-center justify-between">
-            
-            <Calendar className="w-8 h-8 text-red-500" />
+            <div>
+              <p className="text-sm text-gray-600">Annulés</p>
+              <p className="text-2xl font-bold text-gray-900">0</p>
+            </div>
+            <CalendarIcon className="w-8 h-8 text-red-500" />
           </div>
         </div>
       </div>
 
-      {/* Formulaire d'ajout */}
+      {/* Formulaire d'ajout avec calendrier */}
       {showAddForm && (
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Nouveau rendez-vous</h2>
-          <form onSubmit={handleAddRendezVous} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
-              <select
-                required
-                value={formData.patientId}
-                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Sélectionner un patient</option>
-                {patients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.prenom} {patient.nom}
-                  </option>
-                ))}
-              </select>
+          <form onSubmit={handleAddRendezVous} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+                <select
+                  required
+                  value={formData.patientId}
+                  onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner un patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.prenom} {patient.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Médecin</label>
+                <select
+                  required
+                  value={formData.medecinId}
+                  onChange={(e) => setFormData({ ...formData, medecinId: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner un médecin</option>
+                  {medecins.map((medecin) => (
+                    <option key={medecin.id} value={medecin.id}>
+                      Dr. {medecin.prenom} {medecin.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Sélection de date et heure */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date du rendez-vous</label>
+                <Input
+                  type="date"
+                  required
+                  value={selectedDate ? selectedDate.toISOString().split("T")[0] : ""}
+                  onChange={(e) => setSelectedDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure</label>
+                <select
+                  required
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner une heure</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Médecin</label>
-              <select
-                required
-                value={formData.medecinId}
-                onChange={(e) => setFormData({ ...formData, medecinId: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Sélectionner un médecin</option>
-                {medecins.map((medecin) => (
-                  <option key={medecin.id} value={medecin.id}>
-                    Dr. {medecin.prenom} {medecin.nom}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <Input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Heure</label>
-              <Input
-                type="time"
-                required
-                value={formData.heure}
-                onChange={(e) => setFormData({ ...formData, heure: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Motif</label>
               <Input
                 required
@@ -367,74 +427,84 @@ export default function AdminRendezVousPage() {
               <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                 Ajouter
               </Button>
-             
             </div>
           </form>
         </div>
       )}
 
-      {/* Formulaire de modification */}
+      {/* Formulaire de modification avec calendrier */}
       {showEditForm && editingRdv && (
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border-l-4 border-orange-500">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Modifier le rendez-vous #{editingRdv.id}</h2>
-          <form onSubmit={handleEditRendezVous} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
-              <select
-                required
-                value={editFormData.patientId}
-                onChange={(e) => setEditFormData({ ...editFormData, patientId: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              >
-                <option value="">Sélectionner un patient</option>
-                {patients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.prenom} {patient.nom}
-                  </option>
-                ))}
-              </select>
+          <form onSubmit={handleEditRendezVous} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+                <select
+                  required
+                  value={editFormData.patientId}
+                  onChange={(e) => setEditFormData({ ...editFormData, patientId: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Sélectionner un patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.prenom} {patient.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Médecin</label>
+                <select
+                  required
+                  value={editFormData.medecinId}
+                  onChange={(e) => setEditFormData({ ...editFormData, medecinId: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Sélectionner un médecin</option>
+                  {medecins.map((medecin) => (
+                    <option key={medecin.id} value={medecin.id}>
+                      Dr. {medecin.prenom} {medecin.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Sélection de date et heure pour modification */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date du rendez-vous</label>
+                <Input
+                  type="date"
+                  required
+                  value={editSelectedDate ? editSelectedDate.toISOString().split("T")[0] : ""}
+                  onChange={(e) => setEditSelectedDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure</label>
+                <select
+                  required
+                  value={editSelectedTime}
+                  onChange={(e) => setEditSelectedTime(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Sélectionner une heure</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Médecin</label>
-              <select
-                required
-                value={editFormData.medecinId}
-                onChange={(e) => setEditFormData({ ...editFormData, medecinId: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              >
-                <option value="">Sélectionner un médecin</option>
-                {medecins.map((medecin) => (
-                  <option key={medecin.id} value={medecin.id}>
-                    Dr. {medecin.prenom} {medecin.nom}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <Input
-                type="date"
-                required
-                value={editFormData.date}
-                onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Heure</label>
-              <Input
-                type="time"
-                required
-                value={editFormData.heure}
-                onChange={(e) => setEditFormData({ ...editFormData, heure: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              />
-            </div>
-
-            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Motif</label>
               <Input
                 required
@@ -449,7 +519,14 @@ export default function AdminRendezVousPage() {
               <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">
                 Modifier
               </Button>
-              
+              <Button
+                type="button"
+                onClick={cancelEdit}
+                variant="outline"
+                className="px-4 py-2 rounded-md bg-transparent"
+              >
+                Annuler
+              </Button>
             </div>
           </form>
         </div>
@@ -477,7 +554,7 @@ export default function AdminRendezVousPage() {
               <option value="all">Tous</option>
               <option value="à venir">À venir</option>
               <option value="passé">Passé</option>
-                  
+              <option value="annulé">Annulé</option>
             </select>
           </div>
         </div>
@@ -492,7 +569,7 @@ export default function AdminRendezVousPage() {
           </div>
         ) : filteredList.length === 0 ? (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">Aucun rendez-vous trouvé</p>
           </div>
         ) : (
@@ -539,7 +616,7 @@ export default function AdminRendezVousPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <CalendarIcon className="w-4 h-4 text-gray-400" />
                         <div>
                           <p className="font-medium text-gray-900">{rdv.date}</p>
                           <p className="text-sm text-gray-500">{rdv.heure}</p>
@@ -556,13 +633,12 @@ export default function AdminRendezVousPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
-                      <Button
-  onClick={() => window.open(`http://localhost:3001/rendezvous/${rdv.id}/pdf`, "_blank")}
-  className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded text-sm"
->
-  PDF
-</Button>
-
+                        <Button
+                          onClick={() => window.open(`http://localhost:3001/rendezvous/${rdv.id}/pdf`, "_blank")}
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded text-sm"
+                        >
+                          PDF
+                        </Button>
                         <Button
                           onClick={() => openEditForm(rdv)}
                           className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1 rounded text-sm"

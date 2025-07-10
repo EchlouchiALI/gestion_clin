@@ -70,15 +70,7 @@ export default function PatientDashboardPage() {
   }
 
   const dashboardCards = [
-    {
-      title: "Mes ordonnances",
-      description: "Consultez et gérez vos prescriptions médicales",
-      icon: FileText,
-      href: "/dashboard/patient/ordonnances",
-      color: "bg-blue-50 hover:bg-blue-100 border-blue-200",
-      iconColor: "text-blue-600",
-      buttonColor: "bg-blue-600 hover:bg-blue-700",
-    },
+    
     {
       title: "Prendre rendez-vous",
       description: "Planifiez votre prochain rendez-vous médical",

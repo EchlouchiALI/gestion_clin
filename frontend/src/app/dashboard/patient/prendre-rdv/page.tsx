@@ -250,16 +250,24 @@ export default function PagePrendreRdv() {
       const transcript = event.results[0][0].transcript.toLowerCase()
       console.log("🎙️ Texte reconnu :", transcript)
 
-      const doctorMatch = transcript.match(/(?:docteur|dr)\s+([\w-]+)/i)
+      const doctorMatch = transcript.match(
+        /(?:docteur|dr)\s+([\w\s-]+)/i,
+      )
       const dateMatch = transcript.match(
-        /(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/i,
+        /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/i,
       )
       const timeMatch = transcript.match(/(\d{1,2})\s*(?:h|heures?)/i)
 
       if (doctorMatch && dateMatch && timeMatch) {
         const nomMedecin = doctorMatch[1]
 
-        const medecin = medecins.find((m) => `dr ${m.nom} ${m.prenom}`.toLowerCase().includes(nomMedecin.toLowerCase()))
+        const medecin = medecins.find((m) => {
+          const search = nomMedecin.toLowerCase().trim()
+          const full1 = `dr ${m.nom} ${m.prenom}`.toLowerCase()
+          const full2 = `dr ${m.prenom} ${m.nom}`.toLowerCase()
+          return full1.includes(search) || full2.includes(search)
+        })
+
 
         if (!medecin) {
           alert("❌ Médecin non trouvé.")

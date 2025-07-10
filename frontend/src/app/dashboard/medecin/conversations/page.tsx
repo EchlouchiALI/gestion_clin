@@ -1,112 +1,120 @@
 "use client"
-import { useEffect, useState, useRef } from "react"
+
 import type React from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import axios from "axios"
-import { io, type Socket } from "socket.io-client"
+import io from "socket.io-client"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
 import {
   ArrowLeft,
-  Send,
   MessageCircle,
-  User,
-  Stethoscope,
-  Search,
+  Users,
   Clock,
+  Send,
   Check,
   X,
-  UserCheck,
+  Stethoscope,
   Bell,
+  CheckCircle,
+  XCircle,
 } from "lucide-react"
 
-type Demande = {
+const socket = io("http://localhost:3001", { autoConnect: false })
+
+interface Demande {
   id: number
-  content: string
-  createdAt: string
   sender: {
     id: number
     nom: string
     prenom: string
-    email: string
   }
 }
 
-type Message = {
+interface Patient {
+  id: number
+  nom: string
+  prenom: string
+}
+
+interface Message {
+  id: number
   content: string
-  senderRole: "patient" | "medecin"
+  senderRole: "medecin" | "patient"
   createdAt: string
 }
 
-export default function ConversationsPage() {
+export default function MedecinConversationsPage() {
   const [demandes, setDemandes] = useState<Demande[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null)
-  const [selectedPatient, setSelectedPatient] = useState<any>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [socketInstance, setSocketInstance] = useState<Socket | null>(null)
+  const [content, setContent] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [notification, setNotification] = useState<string>("")
+  const [notificationType, setNotificationType] = useState<"success" | "error">("success")
 
-  const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}") : {}
+  const router = useRouter()
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : ""
 
-  // Auto scroll vers le bas
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  // Fonction pour afficher les notifications
+  const showNotification = (message: string, type: "success" | "error" = "success") => {
+    setNotification(message)
+    setNotificationType(type)
+    setTimeout(() => setNotification(""), 4000)
   }
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token")
-    setToken(storedToken)
+    fetchDemandes()
+    fetchConversations()
   }, [])
 
   useEffect(() => {
-    const s = io("http://localhost:3001")
-    setSocketInstance(s)
+    socket.connect()
+    socket.on("receive_message", (msg: Message) => {
+      setMessages((prev) => [...prev, msg])
+    })
     return () => {
-      s.disconnect()
+      socket.disconnect()
     }
   }, [])
 
+  // Auto-scroll des messages
+  useEffect(() => {
+    const chatBox = document.getElementById("chat-messages")
+    if (chatBox) {
+      chatBox.scrollTop = chatBox.scrollHeight
+    }
+  }, [messages])
+
   const fetchDemandes = async () => {
-    if (!token) return
-    setIsLoading(true)
     try {
       const res = await axios.get("http://localhost:3001/medecin/demandes", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setDemandes(res.data)
     } catch (error) {
-      console.error("Erreur lors du chargement des demandes:", error)
-    } finally {
-      setIsLoading(false)
+      showNotification("Erreur lors du chargement des demandes", "error")
     }
   }
 
-  const fetchConversation = async (patientId: number) => {
-    if (!token) return
-    setIsLoading(true)
+  const fetchConversations = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/medecin/conversations/${patientId}`, {
+      const res = await axios.get("http://localhost:3001/medecin/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       })
-      setMessages(res.data)
+      setPatients(res.data)
     } catch (error) {
-      console.error("Erreur lors du chargement de la conversation:", error)
-    } finally {
-      setIsLoading(false)
+      showNotification("Erreur lors du chargement des conversations", "error")
     }
   }
 
-  const handleAccept = async (patientId: number, patient: any) => {
-    if (!token) return
+  const accepterDemande = async (patientId: number) => {
+    setIsLoading(true)
     try {
       await axios.post(
         "http://localhost:3001/medecin/demandes/accept",
@@ -114,45 +122,64 @@ export default function ConversationsPage() {
         { headers: { Authorization: `Bearer ${token}` } },
       )
       await fetchDemandes()
-      setSelectedPatientId(patientId)
-      setSelectedPatient(patient)
-      fetchConversation(patientId)
+      await fetchConversations()
+      showNotification("Demande acceptée avec succès !", "success")
     } catch (error) {
-      console.error("Erreur lors de l'acceptation:", error)
+      showNotification("Erreur lors de l'acceptation", "error")
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleReject = async (demandeId: number) => {
-    if (!token) return
+  const refuserDemande = async (patientId: number) => {
+    setIsLoading(true)
     try {
-      await axios.delete(`http://localhost:3001/messages/${demandeId}`, {
+      await axios.post(
+        "http://localhost:3001/medecin/demandes/refuse",
+        { patientId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      await fetchDemandes()
+      showNotification("Demande refusée", "success")
+    } catch (error) {
+      showNotification("Erreur lors du refus", "error")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchMessages = async (patient: Patient) => {
+    setSelectedPatient(patient)
+    try {
+      const res = await axios.get(`http://localhost:3001/medecin/conversations/${patient.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      await fetchDemandes()
+      setMessages(res.data)
     } catch (error) {
-      console.error("Erreur lors du refus:", error)
+      showNotification("Erreur lors du chargement des messages", "error")
     }
   }
 
-  const sendMessage = () => {
-    if (!newMessage.trim() || !selectedPatientId) return
+  const sendMessage = async () => {
+    if (!content.trim() || !selectedPatient) return
 
-    const msg = {
-      senderId: user?.id,
-      senderRole: "medecin",
-      content: newMessage,
-      receiverId: selectedPatientId,
+    try {
+      const res = await axios.post(
+        "http://localhost:3001/medecin/messages",
+        {
+          receiverId: selectedPatient.id,
+          content,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      socket.emit("send_message", res.data)
+      setMessages((prev) => [...prev, res.data])
+      setContent("")
+    } catch (error) {
+      showNotification("Erreur lors de l'envoi du message", "error")
     }
-
-    socketInstance?.emit("message", msg)
-    setMessages((prev) => [
-      ...prev,
-      { content: newMessage, senderRole: "medecin", createdAt: new Date().toISOString() },
-    ])
-    setNewMessage("")
   }
 
-  // Gérer l'envoi avec Enter
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -160,30 +187,10 @@ export default function ConversationsPage() {
     }
   }
 
-  useEffect(() => {
-    if (!token) return
-    fetchDemandes()
-    socketInstance?.on("message", (msg: any) => {
-      if (msg.sender === "patient" && msg.receiverId === selectedPatientId) {
-        setMessages((prev) => [
-          ...prev,
-          { content: msg.content, senderRole: "patient", createdAt: new Date().toISOString() },
-        ])
-      }
-    })
-    return () => {
-      socketInstance?.off("message")
-    }
-  }, [selectedPatientId, token, socketInstance])
-
-  // Fonction pour retourner à la page précédente
-  const handleGoBack = () => {
-    if (typeof window !== "undefined") {
-      window.history.back()
-    }
+  const getInitials = (prenom: string, nom: string) => {
+    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase()
   }
 
-  // Formater l'heure
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString("fr-FR", {
       hour: "2-digit",
@@ -191,246 +198,296 @@ export default function ConversationsPage() {
     })
   }
 
-  // Formater la date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
-  // Filtrer les demandes
-  const filteredDemandes = demandes.filter((demande) =>
-    `${demande.sender.prenom} ${demande.sender.nom}`.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      {/* Header principal */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleGoBack} className="hover:bg-gray-100 rounded-full p-2">
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Consultations</h1>
-              <p className="text-sm text-gray-500">Gestion des demandes patients</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Notification Toast */}
+      {notification && (
+        <div
+          className={`fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300 ${
+            notificationType === "success" ? "bg-green-500 border-green-600" : "bg-red-500 border-red-600"
+          } text-white px-6 py-4 rounded-lg shadow-xl border-l-4 flex items-center space-x-2`}
+        >
+          {notificationType === "success" ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <span className="font-medium">{notification}</span>
+        </div>
+      )}
+
+      {/* Header avec bouton retour */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="flex items-center space-x-2 hover:bg-gray-100 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Retour</span>
+              </Button>
+
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Messagerie Médecin</h1>
+                  <p className="text-sm text-gray-600">Gérez vos conversations avec vos patients</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-              {demandes.length} demande{demandes.length !== 1 ? "s" : ""}
-            </Badge>
+
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs">En ligne</span>
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar - Liste des demandes */}
-        <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
-          {/* Search bar */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher un patient..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-50 border-0 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Liste des demandes */}
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Demandes en attente */}
+        <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Clock className="w-5 h-5 text-orange-600" />
               </div>
-            ) : filteredDemandes.length === 0 ? (
-              <div className="text-center py-8 px-4">
-                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">
-                  {demandes.length === 0 ? "Aucune demande pour l'instant" : "Aucun patient trouvé"}
-                </p>
+              <span>Demandes en attente</span>
+              {demandes.length > 0 && <Badge className="bg-orange-500 hover:bg-orange-600">{demandes.length}</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {demandes.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-lg">Aucune demande en attente</p>
+                <p className="text-gray-400 text-sm mt-1">Les nouvelles demandes apparaîtront ici</p>
               </div>
             ) : (
-              <div className="space-y-2 p-3">
-                {filteredDemandes.map((demande) => (
-                  <div
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {demandes.map((demande) => (
+                  <Card
                     key={demande.id}
-                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200"
+                    className="border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-orange-100/50 hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {demande.sender.prenom} {demande.sender.nom}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">{demande.sender.email}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">{formatDate(demande.createdAt)}</span>
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="bg-orange-200 text-orange-800 font-semibold">
+                            {getInitials(demande.sender.prenom, demande.sender.nom)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">
+                            {demande.sender.prenom} {demande.sender.nom}
+                          </p>
+                          <p className="text-sm text-gray-600">Nouvelle demande de contact</p>
                         </div>
                       </div>
-                    </div>
-
-                    {demande.content && (
-                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                        <p className="text-sm text-gray-700 leading-relaxed">{demande.content}</p>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => accepterDemande(demande.sender.id)}
+                          disabled={isLoading}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                          size="sm"
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Accepter
+                        </Button>
+                        <Button
+                          onClick={() => refuserDemande(demande.sender.id)}
+                          disabled={isLoading}
+                          variant="destructive"
+                          className="flex-1"
+                          size="sm"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Refuser
+                        </Button>
                       </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(demande.sender.id, demande.sender)}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Accepter
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleReject(demande.id)}
-                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Refuser
-                      </Button>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Zone de chat principale */}
-        <div className="flex-1 flex flex-col">
-          {selectedPatient ? (
-            <>
-              {/* Header du chat */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {selectedPatient.prenom} {selectedPatient.nom}
-                    </h3>
-                    <p className="text-sm text-gray-500">{selectedPatient.email}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 ml-auto">
-                    <UserCheck className="h-3 w-3 mr-1" />
-                    Consultation acceptée
-                  </Badge>
+        {/* Interface de messagerie */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px]">
+          {/* Liste des patients */}
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
                 </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
-                <div className="max-w-4xl mx-auto space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                        <MessageCircle className="h-8 w-8 text-blue-500" />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Consultation démarrée</h3>
-                      <p className="text-gray-500">La conversation avec le patient peut commencer</p>
+                <span>Mes patients</span>
+                {patients.length > 0 && <Badge variant="secondary">{patients.length}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="h-[580px] overflow-y-auto">
+                {patients.length === 0 ? (
+                  <div className="text-center py-12 px-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-8 h-8 text-gray-400" />
                     </div>
-                  ) : (
-                    <>
-                      {messages.map((message, index) => (
+                    <p className="text-gray-500 text-lg">Aucun patient</p>
+                    <p className="text-gray-400 text-sm mt-1">Les patients acceptés apparaîtront ici</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 p-2">
+                    {patients.map((patient) => (
+                      <div
+                        key={patient.id}
+                        onClick={() => fetchMessages(patient)}
+                        className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
+                          selectedPatient?.id === patient.id ? "bg-blue-50 border-l-4 border-l-blue-500 shadow-sm" : ""
+                        }`}
+                      >
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback className="bg-blue-100 text-blue-800 font-semibold">
+                            {getInitials(patient.prenom, patient.nom)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {patient.prenom} {patient.nom}
+                          </p>
+                          <p className="text-sm text-gray-500 flex items-center">
+                            <Stethoscope className="w-3 h-3 mr-1" />
+                            Patient
+                          </p>
+                        </div>
+                        {selectedPatient?.id === patient.id && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Zone de chat */}
+          <Card className="lg:col-span-2 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <MessageCircle className="w-5 h-5 text-purple-600" />
+                </div>
+                {selectedPatient ? (
+                  <div className="flex items-center space-x-2">
+                    <span>Conversation avec</span>
+                    <Badge variant="outline" className="font-normal">
+                      {selectedPatient.prenom} {selectedPatient.nom}
+                    </Badge>
+                  </div>
+                ) : (
+                  <span>Sélectionnez un patient</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {selectedPatient ? (
+                <div className="flex flex-col h-[580px]">
+                  {/* Messages */}
+                  <div
+                    id="chat-messages"
+                    className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50/50 to-blue-50/30"
+                  >
+                    {messages.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <MessageCircle className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500">Aucun message pour le moment</p>
+                        <p className="text-gray-400 text-sm mt-1">Commencez la conversation</p>
+                      </div>
+                    ) : (
+                      messages.map((message, idx) => (
                         <div
-                          key={`${message.createdAt}-${index}`}
-                          className={`flex gap-3 ${message.senderRole === "medecin" ? "flex-row-reverse" : ""}`}
+                          key={idx}
+                          className={`flex ${message.senderRole === "medecin" ? "justify-end" : "justify-start"}`}
                         >
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarFallback
-                              className={
-                                message.senderRole === "medecin"
-                                  ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-                                  : "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
-                              }
-                            >
-                              {message.senderRole === "medecin" ? (
-                                <Stethoscope className="h-4 w-4" />
-                              ) : (
-                                <User className="h-4 w-4" />
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
                           <div
-                            className={`flex flex-col max-w-xs lg:max-w-md ${message.senderRole === "medecin" ? "items-end" : "items-start"}`}
+                            className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
+                              message.senderRole === "medecin" ? "flex-row-reverse space-x-reverse" : ""
+                            }`}
                           >
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback
+                                className={`text-xs ${
+                                  message.senderRole === "medecin"
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {message.senderRole === "medecin" ? "Dr" : "P"}
+                              </AvatarFallback>
+                            </Avatar>
                             <div
-                              className={`px-4 py-2 rounded-2xl shadow-sm ${
+                              className={`px-4 py-3 rounded-2xl shadow-sm ${
                                 message.senderRole === "medecin"
-                                  ? "bg-blue-600 text-white rounded-br-md"
-                                  : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
+                                  ? "bg-blue-600 text-white rounded-br-sm"
+                                  : "bg-white text-gray-800 rounded-bl-sm border"
                               }`}
                             >
                               <p className="text-sm leading-relaxed">{message.content}</p>
-                            </div>
-                            <div className="flex items-center gap-1 mt-1 px-2">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{formatTime(message.createdAt)}</span>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  message.senderRole === "medecin" ? "text-blue-100" : "text-gray-500"
+                                }`}
+                              >
+                                {formatTime(message.createdAt)}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </>
-                  )}
-                </div>
-              </div>
+                      ))
+                    )}
+                  </div>
 
-              {/* Zone de saisie */}
-              <div className="bg-white border-t border-gray-200 p-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex items-end gap-3">
-                    <div className="flex-1">
+                  {/* Zone de saisie */}
+                  <div className="p-4 border-t bg-white/80 backdrop-blur-sm">
+                    <div className="flex space-x-3">
                       <Input
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                        type="text"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Répondre au patient..."
-                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-full px-4 py-3"
+                        placeholder="Tapez votre message..."
+                        className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
+                      <Button
+                        onClick={sendMessage}
+                        disabled={!content.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 px-6"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim()}
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center bg-gray-50">
-              <div className="text-center max-w-md mx-auto px-4">
-                <div className="bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <UserCheck className="h-10 w-10 text-blue-500" />
+              ) : (
+                <div className="flex items-center justify-center h-[580px]">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <MessageCircle className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-xl font-medium mb-2">Sélectionnez un patient</p>
+                    <p className="text-gray-400">Choisissez un patient dans la liste pour commencer la conversation</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Acceptez une consultation</h3>
-                <p className="text-gray-500 leading-relaxed">
-                  Sélectionnez une demande de consultation dans la liste pour commencer à discuter avec le patient
-                </p>
-              </div>
-            </div>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
