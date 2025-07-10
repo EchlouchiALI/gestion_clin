@@ -117,7 +117,9 @@ export default function RendezVousPrestige() {
     }
 
     if (statusFilter !== "tous") {
-      filtered = filtered.filter((rdv) => rdv.statut.toLowerCase().includes(statusFilter.toLowerCase()))
+      filtered = filtered.filter(
+        (rdv) => rdv.statut.toLowerCase() === statusFilter.toLowerCase(),
+      )
     }
 
     setFilteredRendezvous(filtered)
@@ -125,8 +127,8 @@ export default function RendezVousPrestige() {
 
   const getStatusConfig = (statut: string) => {
     switch (statut.toLowerCase()) {
-      case "confirmé":
-      case "confirme":
+      case "à venir":
+      case "a venir":
         return {
           color: "bg-emerald-500",
           bgColor: "bg-emerald-50",
@@ -134,14 +136,14 @@ export default function RendezVousPrestige() {
           borderColor: "border-emerald-200",
           icon: <CheckCircle className="w-5 h-5" />,
         }
-      case "en attente":
-      case "attente":
+        case "passé":
+          case "passe":
         return {
           color: "bg-amber-500",
           bgColor: "bg-amber-50",
           textColor: "text-amber-700",
           borderColor: "border-amber-200",
-          icon: <AlertCircle className="w-5 h-5" />,
+          icon: <Clock className="w-5 h-5" />,
         }
       case "annulé":
       case "annule":
@@ -271,11 +273,11 @@ export default function RendezVousPrestige() {
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Confirmés</p>
+              <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">À venir</p>
                 <p className="text-3xl font-bold text-emerald-600 mt-1">
-                  {rendezvous.filter((rdv) => rdv.statut.toLowerCase().includes("confirm")).length}
+                {rendezvous.filter((rdv) => rdv.statut === "à venir").length}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Validés</p>
+                <p className="text-xs text-slate-500 mt-1">Confirmés</p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
                 <CheckCircle className="h-7 w-7 text-white" />
@@ -286,14 +288,14 @@ export default function RendezVousPrestige() {
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">En attente</p>
+              <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Passés</p>
                 <p className="text-3xl font-bold text-amber-600 mt-1">
-                  {rendezvous.filter((rdv) => rdv.statut.toLowerCase().includes("attente")).length}
+                {rendezvous.filter((rdv) => rdv.statut === "passé").length}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">À traiter</p>
+                <p className="text-xs text-slate-500 mt-1">Terminés</p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <AlertCircle className="h-7 w-7 text-white" />
+              <Clock className="h-7 w-7 text-white" />
               </div>
             </div>
           </div>
@@ -314,8 +316,8 @@ export default function RendezVousPrestige() {
             <div className="flex gap-3">
               {[
                 { key: "tous", label: "Tous", color: "slate" },
-                { key: "confirmé", label: "Confirmés", color: "emerald" },
-                { key: "attente", label: "En attente", color: "amber" },
+                { key: "à venir", label: "À venir", color: "emerald" },
+                { key: "passé", label: "Passés", color: "amber" },
                 { key: "annulé", label: "Annulés", color: "red" },
               ].map((filter) => (
                 <Button
