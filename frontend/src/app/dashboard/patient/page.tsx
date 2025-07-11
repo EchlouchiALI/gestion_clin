@@ -98,6 +98,16 @@ export default function PatientDashboardPage() {
       iconColor: "text-orange-600",
       buttonColor: "bg-orange-600 hover:bg-orange-700",
     },
+    {
+      title: "OrdonnancIa",
+      description: "OdonnancIa",
+      icon: User,
+      href: "/dashboard/patient/ordonnances",
+      color: "bg-orange-50 hover:bg-orange-100 border-orange-200",
+      iconColor: "text-orange-600",
+      buttonColor: "bg-orange-600 hover:bg-orange-700",
+    },
+    
   ]
 
   if (loading) {

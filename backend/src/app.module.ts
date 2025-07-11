@@ -19,18 +19,21 @@ import { MailModule } from './mail/mail.module';
 import { OrdonnancesModule } from './ordonnances/ordonnances.module';
 import { MessagesModule } from './messages/messages.module';
 import { ActivityModule } from './activity/activity.module';
-import { ChatbotModule } from '../chatbot/chatbot.module'
+import { ChatbotModule } from '../chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
+
+// 🧠 Entité utilisée ailleurs
+import { OrdonnanceAnalyse } from './ordonnance-analyse/ordonnance-analyse.entity'; // ✅ tu peux garder cet import pour TypeORM
 
 // 🔐 Garde de rôles
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
-    // 🌍 Chargement global du .env
+    // 🌍 Chargement du .env
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // 🗃️ Connexion à PostgreSQL
+    // 🗃️ Connexion PostgreSQL
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -38,7 +41,7 @@ import { RolesGuard } from './common/guards/roles.guard';
       username: 'postgres',
       password: '123456789',
       database: 'clinique_db',
-      autoLoadEntities: true,
+      autoLoadEntities: true, // ✅ toutes les entités sont automatiquement reconnues
       synchronize: true,
     }),
 
@@ -48,7 +51,7 @@ import { RolesGuard } from './common/guards/roles.guard';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
     }),
 
-    // 📧 Configuration mail
+    // 📧 Configuration Mailer
     MailerModule.forRoot({
       transport: {
         service: 'gmail',
@@ -67,7 +70,7 @@ import { RolesGuard } from './common/guards/roles.guard';
       },
     }),
 
-    // 🚀 Modules fonctionnels
+    // 🚀 Tous les modules métier
     AuthModule,
     MedecinsModule,
     PatientModule,
@@ -80,7 +83,8 @@ import { RolesGuard } from './common/guards/roles.guard';
     ActivityModule,
     ChatbotModule,
     ChatModule,
-
+    OrdonnanceAnalyse,
+    // ⏰ Tâches planifiées
     ScheduleModule.forRoot(),
   ],
 

@@ -3,7 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Ordonnance } from './ordonnance.entity';
 import { User } from '../users/user.entity';
 import { Medecin } from '../medecins/medecin.entity';
-import { Activity } from '../activity/activity.entity';  // <<-- ajoute cette ligne
+import { Activity } from '../activity/activity.entity';
+import { OrdonnanceAnalyse } from '../ordonnance-analyse/ordonnance-analyse.entity'; // ✅ Import ajouté
+
 import { OrdonnancesService } from './ordonnances.service';
 import { OrdonnancesController } from './ordonnances.controller';
 import { PdfService } from '../pdf/pdf.service';
@@ -13,7 +15,13 @@ import { MedecinsModule } from '../medecins/medecins.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Ordonnance, User, Medecin, Activity]), // <<-- ajoute Activity ici
+    TypeOrmModule.forFeature([
+      Ordonnance,
+      User,
+      Medecin,
+      Activity,
+      OrdonnanceAnalyse, // ✅ Requis pour injecter le repo
+    ]),
     UsersModule,
     MedecinsModule,
   ],
