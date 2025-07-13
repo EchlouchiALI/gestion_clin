@@ -1,24 +1,44 @@
-import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreatePatientDto {
   @IsNotEmpty()
-  nom: string;
+  nom: string
 
   @IsNotEmpty()
-  prenom: string;
+  prenom: string
 
   @IsEmail()
-  email: string;
+  email: string
 
   @IsOptional()
-  telephone?: string;
+  telephone?: string
 
   @IsOptional()
-  sexe?: string; // ✅ Une seule fois
+  sexe?: string
 
   @IsOptional()
-  dateNaissance?: string;
+  dateNaissance?: string
 
   @IsOptional()
-  password?: string; // ← utile plus tard si tu veux générer un mot de passe
+  lieuNaissance?: string
+
+  @IsOptional()
+  password?: string
+
+  // ✅ Champs médicaux
+  @IsOptional()
+  @IsString()
+  maladiesConnues?: string
+
+  @IsOptional()
+  @IsString()
+  traitementsEnCours?: string
+
+  @IsOptional()
+  @IsString()
+  allergies?: string
+
+  @IsOptional()
+  @IsString()
+  antecedentsMedicaux?: string
 }

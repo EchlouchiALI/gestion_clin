@@ -1,65 +1,82 @@
+// src/app/dashboard/patient/ordonnances/page.tsx
 "use client";
 
 import { useState } from "react";
 import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, FileText, UploadCloud } from "lucide-react";
 
-export default function OrdonnancesPatientPage() {
+export default function AnalyseOrdonnancePage() {
   const [file, setFile] = useState<File | null>(null);
+  const [texte, setTexte] = useState<string>("");
+  const [resultat, setResultat] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string>("");
 
-  const handleUpload = async () => {
-    if (!file) return alert("Veuillez choisir un fichier PDF");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) setFile(selectedFile);
+  };
 
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Utilisateur non authentifié");
-
+  const envoyerFichier = async () => {
+    if (!file) return alert("Veuillez choisir un fichier.");
     const formData = new FormData();
     formData.append("file", file);
-
-    setLoading(true);
     try {
+      setLoading(true);
+      setTexte("");
+      setResultat("");
+      const token = localStorage.getItem("token");
       const res = await axios.post(
-        "http://localhost:3001/patient/ordonnances",
+        "http://localhost:3001/patient/ordonnances/analyse",
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-      setResult(res.data.explanation);
-    } catch (error) {
-      console.error("Erreur lors de l’analyse IA :", error);
-      alert("Erreur 500 : Analyse impossible. Vérifie le backend.");
+      setTexte(res.data.texte);
+      setResultat(res.data.reponse);
+    } catch (err: any) {
+      alert("Erreur lors de l'analyse : " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-xl mx-auto space-y-4">
-      <h2 className="text-xl font-bold">Analyse IA d’une ordonnance</h2>
+    <div className="p-6 space-y-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        <FileText className="w-6 h-6" /> Analyse d'Ordonnance IA
+      </h1>
 
-      <input
-        type="file"
-        accept="application/pdf"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
+      <Input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
 
-      <button
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-        onClick={handleUpload}
-        disabled={loading}
-      >
-        {loading ? "Analyse en cours..." : "Analyser le PDF"}
-      </button>
+      <Button onClick={envoyerFichier} disabled={loading || !file} className="flex gap-2">
+        <UploadCloud className="w-4 h-4" />
+        {loading ? (
+          <>
+            <Loader2 className="animate-spin w-4 h-4" /> En cours...
+          </>
+        ) : (
+          "Analyser"
+        )}
+      </Button>
 
-      {result && (
-        <div className="mt-4 p-4 border rounded bg-gray-50 whitespace-pre-line">
-          <h3 className="font-semibold mb-2">Résultat de l’analyse :</h3>
-          <p>{result}</p>
+      {texte && (
+        <div>
+          <h2 className="font-semibold">Texte extrait :</h2>
+          <Textarea readOnly value={texte} className="min-h-[120px]" />
+        </div>
+      )}
+
+      {resultat && (
+        <div>
+          <h2 className="font-semibold">Analyse IA :</h2>
+          <Textarea readOnly value={resultat} className="min-h-[160px] text-green-800" />
         </div>
       )}
     </div>

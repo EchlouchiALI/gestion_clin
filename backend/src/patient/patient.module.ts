@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { PatientController } from './patient.controller'; // pour le médecin
-import { PatientProfileController } from './patient.profile.controller'; // pour /patient/me
+import { PatientController } from './patient.controller';
+import { PatientProfileController } from './patient.profile.controller';
 
 import { PatientService } from './patient.service';
 import { UsersService } from '../users/users.service';
@@ -15,14 +15,22 @@ import { User } from '../users/user.entity';
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Medecin } from '../medecins/medecin.entity';
 import { Activity } from '../activity/activity.entity'; 
+import { Ordonnance } from '../ordonnances/ordonnance.entity'; // ✅
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Patient, User, RendezVous, Medecin,Activity]),
+    TypeOrmModule.forFeature([
+      Patient,
+      User,
+      RendezVous,
+      Medecin,
+      Activity,
+      Ordonnance, // ✅ Ajouté ici correctement
+    ]),
   ],
   controllers: [
-    PatientController,          // 🔹 /medecin/patients
-    PatientProfileController,   // 🔹 /patient/me
+    PatientController,
+    PatientProfileController,
   ],
   providers: [
     PatientService,

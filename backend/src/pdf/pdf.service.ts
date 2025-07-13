@@ -86,6 +86,9 @@ export class PdfService {
     patient: { nom: string; prenom: string; email: string };
     medecin: { nom: string; prenom: string; specialite?: string };
     prescription: string;
+    traitements?: string;
+    duree?: string;
+    analyses?: string;
   }): Promise<Buffer> {
     const doc = new PDFDocument({ margin: 50 });
     const buffers: Buffer[] = [];
@@ -99,52 +102,94 @@ export class PdfService {
   
     doc.pipe(stream);
   
-    // En-tête
+    // 🧾 En-tête clinique
     doc
-      .fontSize(20)
-      .text(`Dr ${data.medecin.prenom} ${data.medecin.nom}`, { align: 'left' })
-      .fontSize(12)
-      .text(`${data.medecin.specialite || 'Médecin généraliste'}`, { align: 'left' })
-      .text('Polyclinique Atlas')
-      .text('123 rue Principale, Ville')
-      .text('Tél: 05 24 00 00 00')
-      .moveDown();
-  
-    // Infos patient
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .text('Polyclinique Atlas', { align: 'center' })
+      .moveDown(0.5);
     doc
-      .fontSize(12)
-      .text(`Date : ${data.date}`, { align: 'right' })
-      .moveDown()
-      .text(`Patient : ${data.patient.prenom} ${data.patient.nom}`)
-      .text(`Email : ${data.patient.email}`)
-      .moveDown();
-  
-    // Prescription
-    doc
-      .fontSize(14)
-      .text('Ordonnance médicale', { underline: true })
-      .moveDown()
-      .fontSize(12)
-      .text(data.prescription, {
-        align: 'left',
-        lineGap: 6,
-      })
+      .fontSize(10)
+      .font('Helvetica')
+      .text('123 Route Sefrou, Fès - Maroc', { align: 'center' })
+      .text('Tél : 05 24 11 26 28 | Email : contact@atlas.ma', { align: 'center' })
       .moveDown(2);
   
-    // Pied + Code-barres
+    // 📌 Titre
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('ORDONNANCE MÉDICALE', { align: 'center', underline: true })
+      .moveDown(2);
+  
+    // 👨‍⚕️ Médecin
+    doc
+      .fontSize(11)
+      .font('Helvetica')
+      .text(`Médecin : Dr ${data.medecin.prenom} ${data.medecin.nom}`)
+      .text(`Spécialité : ${data.medecin.specialite || 'Médecin généraliste'}`)
+      .moveDown(1);
+  
+    // 👤 Patient + date
+    doc
+      .text(`Patient : ${data.patient.prenom} ${data.patient.nom}`)
+      .text(`Email : ${data.patient.email}`)
+      .text(`Date : ${new Date(data.date).toLocaleDateString('fr-FR')}`)
+      .moveDown(2);
+  
+    // 🩺 Sections médicales
+    const writeSection = (title: string, content?: string) => {
+      if (content && content.trim() !== '') {
+        doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .text(`${title} :`)
+          .fontSize(11)
+          .font('Helvetica')
+          .text(content.trim())
+          .moveDown(1);
+      }
+    };
+  
+    writeSection('Prescription', data.prescription);
+    writeSection('Traitements', data.traitements);
+    writeSection('Durée', data.duree);
+    writeSection('Analyses', data.analyses);
+  
+    // ✍️ Signature
+    doc
+      .moveDown(3)
+      .fontSize(11)
+      .text('Signature du médecin :', { align: 'right' })
+      .moveDown(2);
+  
+    // 📅 Pied de page
+    doc
+      .fontSize(9)
+      .fillColor('gray')
+      .text(
+        `Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`,
+        50,
+        doc.page.height - 70,
+        { align: 'center' }
+      );
+  
+    // 🔢 Code-barres
     const barcode = await bwipjs.toBuffer({
       bcid: 'code128',
-      text: `${data.id}`,
+      text: String(data.id),
       scale: 3,
       height: 10,
       includetext: true,
       textxalign: 'center',
     });
   
-    doc.image(barcode, doc.page.width / 2 - 75, doc.y, {
-      fit: [150, 40],
-      align: 'center',
-    });
+    const barcodeWidth = 150;
+    const barcodeHeight = 40;
+    const x = (doc.page.width - barcodeWidth) / 2;
+    const y = doc.page.height - barcodeHeight - 40;
+  
+    doc.image(barcode, x, y, { width: barcodeWidth, height: barcodeHeight });
   
     doc.end();
   
@@ -154,69 +199,109 @@ export class PdfService {
       });
     });
   }
+  
+  
   // ✅ PDF de Dossier Patient stylé
   async generatePatientPDF(patient: any): Promise<Buffer> {
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
-
+  
     const stream = new Writable({
       write(chunk, _enc, next) {
         chunks.push(chunk);
         next();
       },
     });
-
+  
     doc.pipe(stream);
-
-    // En-tête
+  
+    // 🟦 En-tête
     doc
-      .fontSize(26)
-      .fillColor('#004080')
+      .fillColor('#1F4E79')
       .font('Helvetica-Bold')
+      .fontSize(24)
       .text('CLINIQUE ATLAS', { align: 'center' })
-      .moveDown();
-
+      .moveDown(0.3);
+  
     doc
-      .fontSize(18)
       .fillColor('black')
       .font('Helvetica')
+      .fontSize(16)
       .text('Dossier Patient', { align: 'center' })
-      .moveDown(1.5);
-
-    // Infos patient
+      .moveDown(1);
+  
+    // 🧍 Informations personnelles
+    const y1 = doc.y;
     doc
-      .roundedRect(40, doc.y, 520, 200, 8)
-      .stroke('#cccccc')
-      .moveDown();
-
+      .roundedRect(40, y1, 520, 190, 8)
+      .fillOpacity(0.05)
+      .fillAndStroke('#E6F0FA', '#CCCCCC')
+      .fillOpacity(1);
+  
     doc
-      .fontSize(12)
+      .fillColor('#1F4E79')
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text('Informations personnelles', 50, y1 + 10);
+  
+    doc
+      .moveDown(1)
       .font('Helvetica')
+      .fontSize(12)
       .fillColor('black')
-      .text(`ID : ${patient.id}`, 60, doc.y + 10)
+      .text(`ID : ${patient.id}`)
       .text(`Nom : ${patient.nom}`)
       .text(`Prénom : ${patient.prenom}`)
       .text(`Email : ${patient.email}`)
       .text(`Téléphone : ${patient.telephone}`)
       .text(`Sexe : ${patient.sexe}`)
       .text(`Date de naissance : ${patient.dateNaissance}`)
-      .moveDown();
-
-    // Pied
+      .text(`Lieu de naissance : ${patient.lieuNaissance || '—'}`)
+      .moveDown(2);
+  
+    // 🩺 Informations médicales
+    const y2 = doc.y;
     doc
-      .moveDown(2)
+      .roundedRect(40, y2, 520, 150, 8)
+      .fillOpacity(0.05)
+      .fillAndStroke('#FFF8E6', '#CCCCCC')
+      .fillOpacity(1);
+  
+    doc
+      .fillColor('#D17B00')
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text('Informations médicales', 50, y2 + 10);
+  
+    doc
+      .moveDown(1)
+      .font('Helvetica')
+      .fontSize(12)
+      .fillColor('black')
+      .text(`Maladies connues : ${patient.maladiesConnues || '—'}`)
+      .text(`Traitements en cours : ${patient.traitementsEnCours || '—'}`)
+      .text(`Allergies : ${patient.allergies || '—'}`)
+      .text(`Antécédents médicaux : ${patient.antecedentsMedicaux || '—'}`)
+      .moveDown(2);
+  
+    // 📅 Pied de page
+    doc
       .fontSize(10)
       .fillColor('gray')
-      .text(`Document généré le : ${new Date().toLocaleDateString()}`, { align: 'right' });
-
+      .text(`Document généré le : ${new Date().toLocaleDateString()}`, {
+        align: 'right',
+      });
+  
     doc.end();
-
+  
     return new Promise<Buffer>((resolve) => {
       stream.on('finish', () => {
         resolve(Buffer.concat(chunks));
       });
     });
   }
+  
+  
   async generateOrdonnancePDFCustom(data: {
     nom: string;
     age: string;

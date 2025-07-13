@@ -20,8 +20,8 @@ import { CreateOrdonnanceDto } from './dto/create-ordonnance.dto';
 import { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { analyseOrdonnanceAvecFallbackOCR } from './ordonnances.service'; 
+import { UpdateOrdonnanceDto } from './dto/update-ordonnance.dto';// ✅ import correct de la fonction externe
 
 @Controller()
 export class OrdonnancesController {
@@ -65,7 +65,7 @@ export class OrdonnancesController {
   @Put('medecin/ordonnances/:id')
   async update(
     @Param('id') id: number,
-    @Body() dto: CreateOrdonnanceDto,
+    @Body() dto: UpdateOrdonnanceDto,
     @Req() req: Request,
   ) {
     const user = req.user as any;
@@ -102,7 +102,7 @@ export class OrdonnancesController {
   }
 
   // ===============================
-  // 👨‍⚕️ PATIENT : Analyse IA des PDF
+  // 👨‍⚕️ PATIENT : Analyse IA des PDF ou image
   // ===============================
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('patient')
@@ -122,10 +122,16 @@ export class OrdonnancesController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ) {
-    const filePath = path.join(process.cwd(), file.path);
-    const fileBuffer = fs.readFileSync(filePath);
-    const result = await this.ordService.analyseOrdonnance(fileBuffer);
+    const result = await this.ordService.analyseFichierUpload(file.buffer, file.originalname);
     return { explanation: result };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('patient')
+  @Post('patient/ordonnances/analyse')
+  async analyseTexteIA(@Body() body: { texte: string }) {
+    // 📌 Utilise la fonction exportée (pas dans le service directement)
+    return analyseOrdonnanceAvecFallbackOCR(body.texte);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

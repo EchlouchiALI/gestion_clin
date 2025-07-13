@@ -1,14 +1,45 @@
+import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+
 export class CreateOrdonnanceDto {
-    patientId: number;
-  
-    // Ajoute bien ce champ s'il n'existe pas
-    contenu: string;
-  
-    // Pour les ordonnances personnalisées
-    nom?: string;
-    age?: string;
-    poids?: string;
-    medicaments?: string;
-    recommandations?: string;
-  }
-  
+  @IsNotEmpty()
+  @IsNumber()
+  patientId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  contenu: string;
+
+  // Champs supplémentaires pour le traitement médical
+  @IsOptional()
+  @IsString()
+  traitements?: string;
+
+  @IsOptional()
+  @IsString()
+  duree?: string;
+
+  @IsOptional()
+  @IsString()
+  analyses?: string;
+
+  // Champs pour les ordonnances personnalisées
+  @IsOptional()
+  @IsString()
+  nom?: string;
+
+  @IsOptional()
+  @IsString()
+  age?: string;
+
+  @IsOptional()
+  @IsString()
+  poids?: string;
+
+  @IsOptional()
+  @IsString()
+  medicaments?: string;
+
+  @IsOptional()
+  @IsString()
+  recommandations?: string;
+}

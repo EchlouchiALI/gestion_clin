@@ -219,27 +219,61 @@ export default function CleanPatientManagement() {
 
                   {/* Patient Info */}
                   <div className="p-6 space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">Email:</span>
-                        <span className="text-sm font-medium text-gray-900">{patient.email}</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">Téléphone:</span>
-                        <span className="text-sm font-medium text-gray-900">{patient.telephone}</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">Sexe:</span>
-                        <span className="text-sm font-medium text-gray-900">{patient.sexe}</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">Naissance:</span>
-                        <span className="text-sm font-medium text-gray-900">{patient.dateNaissance}</span>
-                      </div>
+  <div className="space-y-3">
+    <div className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+      <span className="text-sm text-gray-600">Email:</span>
+      <span className="text-sm font-medium text-gray-900">{patient.email}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+      <span className="text-sm text-gray-600">Téléphone:</span>
+      <span className="text-sm font-medium text-gray-900">{patient.telephone}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+      <span className="text-sm text-gray-600">Sexe:</span>
+      <span className="text-sm font-medium text-gray-900">{patient.sexe}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+      <span className="text-sm text-gray-600">Naissance:</span>
+      <span className="text-sm font-medium text-gray-900">{patient.dateNaissance}</span>
+    </div>
+    <div className="flex items-center space-x-3">
+      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+      <span className="text-sm text-gray-600">Lieu de naissance :</span>
+      <span className="text-sm font-medium text-gray-900">{patient.lieuNaissance || "—"}</span>
+    </div>
+
+    {patient.maladiesConnues && (
+      <div className="flex items-center space-x-3">
+        <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+        <span className="text-sm text-gray-600">Maladies :</span>
+        <span className="text-sm font-medium text-gray-900">{patient.maladiesConnues}</span>
+      </div>
+    )}
+    {patient.traitementsEnCours && (
+      <div className="flex items-center space-x-3">
+        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+        <span className="text-sm text-gray-600">Traitements :</span>
+        <span className="text-sm font-medium text-gray-900">{patient.traitementsEnCours}</span>
+      </div>
+    )}
+    {patient.allergies && (
+      <div className="flex items-center space-x-3">
+        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+        <span className="text-sm text-gray-600">Allergies :</span>
+        <span className="text-sm font-medium text-gray-900">{patient.allergies}</span>
+      </div>
+    )}
+    {patient.antecedentsMedicaux && (
+      <div className="flex items-center space-x-3">
+        <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+        <span className="text-sm text-gray-600">Antécédents :</span>
+        <span className="text-sm font-medium text-gray-900">{patient.antecedentsMedicaux}</span>
+      </div>
+)}
                     </div>
 
                     {/* Action Buttons */}

@@ -22,6 +22,17 @@ export class Patient {
 
   @Column({ nullable: true })
   dateNaissance?: string;
+  @Column({ type: 'text', nullable: true })
+maladiesConnues?: string
+
+@Column({ type: 'text', nullable: true })
+traitementsEnCours?: string
+
+@Column({ type: 'text', nullable: true })
+allergies?: string
+
+@Column({ type: 'text', nullable: true })
+antecedentsMedicaux?: string
 
   @ManyToOne(() => Medecin, (medecin) => medecin.patients, {
     nullable: true,

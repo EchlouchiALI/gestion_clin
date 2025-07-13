@@ -9,8 +9,7 @@ import {
 import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Dossier } from '../dossiers/dossier.entity';
 import { Medecin } from 'src/medecins/medecin.entity';
-import { ChatMessage } from '../../chatbot/entities/chat-message.entity' // ✅ chemin relatif
-
+import { ChatMessage } from '../../chatbot/entities/chat-message.entity';
 
 @Entity()
 export class User {
@@ -23,8 +22,9 @@ export class User {
   @Column()
   prenom: string;
 
-  @Column()
-  age: number;
+  @Column({ type: 'int', nullable: true })
+  age: number | null
+  
 
   @Column()
   lieuNaissance: string;
@@ -56,6 +56,19 @@ export class User {
   @Column({ nullable: true })
   dateNaissance: string;
 
+  // ✅ Champs médicaux
+  @Column({ type: 'text', nullable: true })
+  maladiesConnues?: string;
+
+  @Column({ type: 'text', nullable: true })
+  traitementsEnCours?: string;
+
+  @Column({ type: 'text', nullable: true })
+  allergies?: string;
+
+  @Column({ type: 'text', nullable: true })
+  antecedentsMedicaux?: string;
+
   // ✅ Relations
   @OneToMany(() => RendezVous, (rdv) => rdv.patient)
   rendezvousEnTantQuePatient: RendezVous[];
@@ -68,9 +81,10 @@ export class User {
 
   @ManyToOne(() => Medecin, (medecin) => medecin.patients, { nullable: true })
   medecin: Medecin;
-  @OneToMany(() => ChatMessage, msg => msg.user)
-chatMessages: ChatMessage[]
-@CreateDateColumn({ type: 'timestamp' })
-created_at: Date;
 
+  @OneToMany(() => ChatMessage, (msg) => msg.user)
+  chatMessages: ChatMessage[];
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
 }

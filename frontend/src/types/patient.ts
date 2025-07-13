@@ -16,9 +16,13 @@ export type Patient = {
   }
   ordonnances?: any[]
   rendezvous?: any[]
+  // ✅ Ajout des champs médicaux
+  maladiesConnues?: string
+  traitementsEnCours?: string
+  allergies?: string
+  antecedentsMedicaux?: string
 }
 
-// ✅ Utilisé lors de la création d’un patient
 export type CreatePatientData = {
   nom: string
   prenom: string
@@ -28,14 +32,17 @@ export type CreatePatientData = {
   dateNaissance: string
   lieuNaissance: string
   password: string
+  // ✅ Champs médicaux
+  maladiesConnues?: string
+  traitementsEnCours?: string
+  allergies?: string
+  antecedentsMedicaux?: string
 }
 
-// ✅ Utilisé lors de la mise à jour (le mot de passe n'est pas modifié)
 export type UpdatePatientData = Omit<CreatePatientData, 'password'> & {
   id: number
 }
 
-// ✅ Utilisé dans le formulaire de création ou modification
 export type PatientFormData = {
   nom: string
   prenom: string
@@ -45,5 +52,9 @@ export type PatientFormData = {
   dateNaissance: string
   lieuNaissance: string
   password?: string // requis uniquement pour création
+  // ✅ Champs médicaux
+  maladiesConnues?: string
+  traitementsEnCours?: string
+  allergies?: string
+  antecedentsMedicaux?: string
 }
-

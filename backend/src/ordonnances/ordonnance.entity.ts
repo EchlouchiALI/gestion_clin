@@ -12,6 +12,14 @@ export class Ordonnance {
 
   @Column({ type: 'text' })
   contenu: string;
+  @Column({ nullable: true })
+  traitements: string;
+
+  @Column({ nullable: true })
+  duree: string;
+
+  @Column({ nullable: true })
+  analyses: string;
 
   @ManyToOne(() => Medecin, medecin => medecin.ordonnances, { eager: true })
   medecin: Medecin;
