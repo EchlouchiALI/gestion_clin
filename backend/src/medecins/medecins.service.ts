@@ -5,6 +5,7 @@ import { Medecin } from './medecin.entity';
 import { Patient } from '../patient/patient.entity';
 import { Ordonnance } from '../ordonnances/ordonnance.entity';
 import { User } from '../users/user.entity';
+import { ILike } from 'typeorm';
 
 
 
@@ -106,11 +107,21 @@ export class MedecinsService {
       order: { date: 'DESC' },
     });
   }
-  async findBySpecialite(specialite: string): Promise<Medecin[]> {
-    return this.medecinRepository.find({
-      where: { specialite: Like(`%${specialite}%`) },
+  async findBySpecialite(specialite: string): Promise<User[]> {
+    return this.userRepo.find({
+      where: {
+        role: 'medecin',
+        specialite: ILike(`%${specialite}%`) // 🔁 ILike = insensitive LIKE
+      },
       select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
       order: { nom: 'ASC' },
     });
-}
+  }
+  async findAllUsers(): Promise<User[]> {
+    return this.userRepo.find({
+      where: { role: 'medecin' },
+      select: ['id', 'nom', 'prenom', 'email', 'specialite', 'telephone'],
+      order: { nom: 'ASC' },
+    });
+  }
 }

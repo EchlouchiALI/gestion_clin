@@ -2,18 +2,17 @@
 
 import { Controller, Get, Query } from '@nestjs/common';
 import { MedecinsService } from './medecins.service';
-import { Medecin } from './medecin.entity';
+import { User } from 'src/users/user.entity'; // ✅ On utilise User
 
 @Controller('medecins')
 export class MedecinsPublicController {
   constructor(private readonly medecinsService: MedecinsService) {}
 
-  // 🎯 Récupérer tous les médecins ou filtrer par spécialité
   @Get()
-  async findBySpecialite(@Query('specialite') specialite?: string): Promise<Medecin[]> {
+  async findBySpecialite(@Query('specialite') specialite?: string): Promise<User[]> {
     if (specialite) {
-      return this.medecinsService.findBySpecialite(specialite);
+      return this.medecinsService.findBySpecialite(specialite); // retourne User[]
     }
-    return this.medecinsService.findAll(); // méthode déjà existante
+    return this.medecinsService.findAllUsers(); // retourne aussi User[]
   }
 }

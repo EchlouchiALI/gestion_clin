@@ -41,19 +41,20 @@ export default function ChatbotPage() {
   }, [])
 
   const sendMessage = async () => {
-    if (!input.trim()) return
-
+    if (!input.trim()) return;
+  
     const userMessage: Message = {
       from: "user",
       text: input,
       timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, userMessage])
-    setLoading(true)
-    setInput("")
-
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
+    setInput("");
+  
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
+  
       const res = await fetch("http://localhost:3001/patient/chatbot/ask", {
         method: "POST",
         headers: {
@@ -61,29 +62,71 @@ export default function ChatbotPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ prompt: userMessage.text }),
-      })
-
-      const data = await res.json()
-      const botMessage: Message = {
+      });
+  
+      const data = await res.json();
+  
+      // Affichage de la réponse IA
+      const botResponse: Message = {
         from: "bot",
         text: data.response,
         timestamp: new Date(),
+      };
+  
+      const messagesToAdd: Message[] = [botResponse];
+  
+      // Si spécialité détectée → on cherche les médecins
+      if (data.specialite && data.specialite.length < 50) {
+        messagesToAdd.push({
+          from: "bot",
+          text: `🩺 En fonction de vos symptômes, il est recommandé de consulter un(e) ${data.specialite}.`,
+          timestamp: new Date(),
+        });
+  
+        // Appel API pour récupérer les médecins
+        const resMed = await fetch(`http://localhost:3001/medecin/specialite/${data.specialite}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        const medecins = await resMed.json();
+  
+        if (medecins.length === 0) {
+          messagesToAdd.push({
+            from: "bot",
+            text: `❌ Aucun médecin ${data.specialite} n'est disponible pour le moment.`,
+            timestamp: new Date(),
+          });
+        } else {
+          medecins.forEach((med: any) => {
+            messagesToAdd.push({
+              from: "bot",
+              text: `👨‍⚕️ Dr. ${med.prenom} ${med.nom} – ${med.specialite}\n📧 ${med.email}\n📞 ${med.telephone}`,
+              timestamp: new Date(),
+            });
+          });
+        }
       }
-      setMessages((prev) => [...prev, botMessage])
+  
+      setMessages((prev) => [...prev, ...messagesToAdd]);
     } catch (error) {
+      console.error("❌ Erreur dans le chatbot :", error);
       setMessages((prev) => [
         ...prev,
         {
           from: "bot",
-          text: "❌ Désolé, une erreur s'est produite. Veuillez réessayer dans quelques instants.",
+          text: "❌ Une erreur est survenue. Veuillez réessayer.",
           timestamp: new Date(),
         },
-      ])
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
+  
+  
   }
-
+  
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()

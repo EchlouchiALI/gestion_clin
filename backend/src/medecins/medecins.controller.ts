@@ -19,6 +19,10 @@ import { CreatePatientDto } from '../patient/dto/create-patient.dto';
 import { UpdatePatientDto } from '../patient/dto/update-patient.dto';
 import { PatientService } from 'src/patient/patient.service';
 import { PdfService } from '../pdf/pdf.service';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { User } from 'src/users/user.entity';
+
 
 @UseGuards(JwtAuthGuard)
 @Controller('medecin')
@@ -32,17 +36,15 @@ export class MedecinsController {
   ) {}
 
   @Get('me/profile')
-async getProfile(@Request() req) {
-  console.log('🧑‍⚕️ ID Médecin connecté =', req.user.id);
-  return this.medecinsService.findOne(req.user.id);
-}
-
+  async getProfile(@Request() req) {
+    console.log('🧑‍⚕️ ID Médecin connecté =', req.user.id);
+    return this.medecinsService.findOne(req.user.id);
+  }
 
   @Get('me/rendezvous')
-async getRendezvous(@Request() req) {
-  return this.rendezvousService.findByMedecin(req.user.id);
-}
-
+  async getRendezvous(@Request() req) {
+    return this.rendezvousService.findByMedecin(req.user.id);
+  }
 
   @Get('patients')
   async getMyPatients(@Request() req) {
@@ -171,5 +173,13 @@ async getRendezvous(@Request() req) {
   getAllPatients() {
     return this.patientService.findAll();
   }
-  
+
+  // ✅ Route pour récupérer les médecins d'une spécialité (pour chatbot)
+  @Get('specialite/:specialite')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('patient')
+  async getMedecinsBySpecialite(@Param('specialite') specialite: string): Promise<User[]> {
+
+    return this.medecinsService.findBySpecialite(specialite);
+  }
 }

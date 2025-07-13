@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { API_URL } from "@/lib/config"
+import { API_URL } from "@/lib/config" // Assuming this file exists and exports API_URL
 import {
   MessageCircle,
   FileText,
@@ -60,7 +60,6 @@ export default function PatientDashboardPage() {
         router.push("/login")
       }
     }
-
     fetchPatient()
   }, [router])
 
@@ -70,7 +69,6 @@ export default function PatientDashboardPage() {
   }
 
   const dashboardCards = [
-    
     {
       title: "Prendre rendez-vous",
       description: "Planifiez votre prochain rendez-vous médical",
@@ -98,8 +96,6 @@ export default function PatientDashboardPage() {
       iconColor: "text-orange-600",
       buttonColor: "bg-orange-600 hover:bg-orange-700",
     },
-   
-    
   ]
 
   if (loading) {
@@ -185,24 +181,21 @@ export default function PatientDashboardPage() {
                   title="Localisation de la clinique"
                 />
               </div>
-
               {/* Contact Information */}
               <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Polyclinique Atlas</h3>
-
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
                     <div>
                       <p className="font-medium text-gray-800">Adresse</p>
                       <p className="text-gray-600 text-sm">
-                      Rte de Sefrou, Fès 30000
+                        Rte de Sefrou, Fès 30000
                         <br />
                         Fès 30000, Maroc
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-green-600 flex-shrink-0" />
                     <div>
@@ -210,7 +203,6 @@ export default function PatientDashboardPage() {
                       <p className="text-gray-600 text-sm">0535641697</p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-purple-600 flex-shrink-0" />
                     <div>
@@ -218,7 +210,6 @@ export default function PatientDashboardPage() {
                       <p className="text-gray-600 text-sm">support@polycliniqueatlas.ma.</p>
                     </div>
                   </div>
-
                   <div className="flex items-start gap-3">
                     <Clock className="w-5 h-5 text-orange-600 mt-1 flex-shrink-0" />
                     <div>
@@ -231,7 +222,6 @@ export default function PatientDashboardPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="mt-6 flex gap-3">
                   <Button
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
@@ -350,7 +340,7 @@ export default function PatientDashboardPage() {
 
       {/* Tooltip for chatbot */}
       <div className="fixed bottom-20 right-6 bg-white px-3 py-2 rounded-lg shadow-lg text-sm text-gray-700 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        💬 Besoin d'aide ? Parlez à votre assistant virtuel !
+        {"💬 Besoin d'aide ? Parlez à votre assistant virtuel !"}
       </div>
     </main>
   )
