@@ -33,6 +33,8 @@ type Patient = {
 export default function PatientDashboardPage() {
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activities, setActivities] = useState<any[]>([])
+
   const router = useRouter()
 
   useEffect(() => {
@@ -62,6 +64,24 @@ export default function PatientDashboardPage() {
     }
     fetchPatient()
   }, [router])
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        if (!token) return
+        const res = await fetch(`${API_URL}/patient/activities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) setActivities(data)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchActivities()
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -303,20 +323,43 @@ export default function PatientDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="font-medium text-gray-800">Rendez-vous confirmé</p>
-                  <p className="text-sm text-gray-600">15 janvier 2024 à 14h30</p>
+              
+            {activities.map((act, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${
+                    act.type === 'message' ? 'bg-green-50' : 'bg-blue-50'
+                  }`}
+                >
+                  {act.type === 'message' ? (
+                    <MessageCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  )}
+                  <div>
+                    {act.type === 'message' ? (
+                      <>
+                        <p className="font-medium text-gray-800">
+                          Message de {act.from}
+                        </p>
+                        <p className="text-sm text-gray-600">{act.content}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-gray-800">
+                          Rendez-vous {act.statut}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {act.date} à {act.heure} avec Dr. {act.medecin}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <FileText className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="font-medium text-gray-800">Nouvelle ordonnance</p>
-                  <p className="text-sm text-gray-600">Reçue il y a 2 jours</p>
-                </div>
-              </div>
+                ))}
+                {activities.length === 0 && (
+                  <p className="text-sm text-gray-600">Aucune activité récente.</p>
+                )}
             </div>
           </CardContent>
         </Card>

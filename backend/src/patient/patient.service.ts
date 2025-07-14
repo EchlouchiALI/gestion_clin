@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Medecin } from '../medecins/medecin.entity'
 import { User } from '../users/user.entity'
-import { Ordonnance } from '../ordonnances/ordonnance.entity'; // ✅ chemin correct
+import { Ordonnance } from '../ordonnances/ordonnance.entity'; 
+import { RendezVous } from '../rendezvous/rendezvous.entity'
+import { Message } from '../messages/message.entity'// ✅ chemin correct
 
 
 import * as bcrypt from 'bcrypt'
@@ -19,6 +21,12 @@ export class PatientService {
 
     @InjectRepository(Ordonnance)
     private readonly ordonnanceRepository: Repository<Ordonnance>,
+
+    @InjectRepository(RendezVous)
+    private readonly rendezVousRepo: Repository<RendezVous>,
+
+    @InjectRepository(Message)
+    private readonly messageRepo: Repository<Message>,
   ) {}
 
   // 🔍 Trouver tous les patients d’un médecin
@@ -110,6 +118,45 @@ export class PatientService {
       where: { role: 'patient' },
       relations: ['medecin'],
     })
+  }
+  async getRecentActivities(patientId: number) {
+    const messages = await this.messageRepo.find({
+      where: { receiver: { id: patientId } },
+      relations: ['sender'],
+      order: { createdAt: 'DESC' },
+      take: 5,
+    })
+
+    const rendezvous = await this.rendezVousRepo.find({
+      where: { patient: { id: patientId } },
+      relations: ['medecin'],
+      order: { date: 'DESC', heure: 'DESC' },
+      take: 5,
+    })
+
+    const activities = [
+      ...messages.map((m) => ({
+        type: 'message',
+        content: m.content,
+        from: `${m.sender.prenom} ${m.sender.nom}`,
+        createdAt: m.createdAt,
+      })),
+      ...rendezvous.map((r) => ({
+        type: 'rendezvous',
+        statut: r.statut,
+        date: r.date,
+        heure: r.heure,
+        medecin: `${r.medecin.prenom} ${r.medecin.nom}`,
+        createdAt: new Date(`${r.date}T${r.heure}`),
+      })),
+    ]
+
+    return activities
+      .sort(
+        (a, b) =>
+          (b.createdAt as any).getTime() - (a.createdAt as any).getTime(),
+      )
+      .slice(0, 10)
   }
 }
 

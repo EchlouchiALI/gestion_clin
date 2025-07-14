@@ -104,4 +104,9 @@ createPatient(@Req() req: AuthenticatedRequest, @Body() dto: CreatePatientDto) {
   async deleteAccount(@Req() req: AuthenticatedRequest) {
     return this.userService.remove(req.user.id)
   }
+  @Get('patient/activities')
+  @Roles('patient')
+  async getActivities(@Req() req: AuthenticatedRequest) {
+    return this.patientService.getRecentActivities(req.user.id)
+  }
 }

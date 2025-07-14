@@ -16,6 +16,7 @@ import { RendezVous } from '../rendezvous/rendezvous.entity';
 import { Medecin } from '../medecins/medecin.entity';
 import { Activity } from '../activity/activity.entity'; 
 import { Ordonnance } from '../ordonnances/ordonnance.entity'; // ✅
+import { Message } from '../messages/message.entity';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { Ordonnance } from '../ordonnances/ordonnance.entity'; // ✅
       RendezVous,
       Medecin,
       Activity,
-      Ordonnance, // ✅ Ajouté ici correctement
+      Ordonnance,
+      Message, // ✅ Ajouté ici correctement
     ]),
   ],
   controllers: [
