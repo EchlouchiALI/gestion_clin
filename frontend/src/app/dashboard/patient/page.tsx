@@ -252,12 +252,7 @@ export default function PatientDashboardPage() {
               <div className="text-sm text-gray-600">Rendez-vous ce mois</div>
             </CardContent>
           </Card>
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">2</div>
-              <div className="text-sm text-gray-600">Ordonnances actives</div>
-            </CardContent>
-          </Card>
+          
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-md">
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-purple-600">1</div>
